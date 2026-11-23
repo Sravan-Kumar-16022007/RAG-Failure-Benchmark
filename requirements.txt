@@ -1,0 +1,22 @@
+# Core (Milestone 1)
+pandas>=2.1
+numpy>=1.26
+pydantic>=2.6
+PyYAML>=6.0
+tqdm>=4.66
+python-dotenv>=1.0
+
+# Development
+pytest>=8.0
+ruff>=0.4
+
+# Added in later milestones (do NOT install yet)
+# sentence-transformers>=3.0   (M3)
+# faiss-cpu>=1.8               (M3)
+# scikit-learn>=1.4            (M5)
+# matplotlib>=3.8              (M5)
+# seaborn>=0.13                (M5)
+# streamlit>=1.35              (M6)
+# Added for Milestone 2
+kaggle>=1.6
+scikit-learn>=1.4

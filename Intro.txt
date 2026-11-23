@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG-FailureBench — Analyze & Benchmark AI Failures</title>
+<meta name="description" content="A comprehensive dataset and evaluation pipeline for identifying and classifying Retrieval-Augmented Generation errors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b1220; --ink2:#0e1626; --ink3:#101b33; --ink4:#16233f;
+  --paper:#f5f7fb; --surface:#ffffff; --line:#e3e8f0; --line-d:#22304d;
+  --txt:#101828; --txt-2:#475467; --txt-d:#e6ecf7; --txt-d2:#93a1bd;
+  --cyan:#22d3ee; --teal:#2dd4bf; --blue:#38bdf8; --violet:#a78bfa;
+  --rose:#f43f5e; --amber:#f59e0b; --orange:#fb923c; --fuchsia:#e879f9; --green:#34d399;
+  --grad:linear-gradient(100deg,var(--cyan),var(--teal) 45%,var(--violet));
+  --nav-h:64px; --r:14px;
+  --shadow:0 10px 30px -12px rgba(11,18,32,.25);
+  --font-d:"Space Grotesk",system-ui,sans-serif;
+  --font-b:"Inter",system-ui,sans-serif;
+  --font-m:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);color:var(--txt);background:var(--paper);overflow-x:hidden;line-height:1.55}
+::selection{background:rgba(34,211,238,.35)}
+/* palette-native scrollbars */
+*{scrollbar-width:thin;scrollbar-color:var(--cyan) var(--ink2)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--ink2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--cyan),var(--violet));border-radius:8px;border:2px solid var(--ink2)}
+::-webkit-scrollbar-thumb:hover{background:var(--teal)}
+.light-scroll{scrollbar-color:#b6c2d9 #eef1f7}
+.light-scroll::-webkit-scrollbar-track{background:#eef1f7}
+.light-scroll::-webkit-scrollbar-thumb{background:linear-gradient(var(--cyan),var(--violet));border-color:#eef1f7}
+/* grain */
+body::after{content:"";position:fixed;inset:0;z-index:4;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+section{scroll-margin-top:calc(var(--nav-h) + 16px)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+h1,h2,h3,.d{font-family:var(--font-d)}
+.mono{font-family:var(--font-m)}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:.9rem}
+a{color:inherit}
+/* ---------- NAV ---------- */
+nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:50;display:flex;align-items:center;
+  background:rgba(11,18,32,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid transparent;transition:border-color .3s,box-shadow .3s}
+nav.scrolled{border-bottom-color:var(--line-d);box-shadow:0 8px 30px -12px rgba(0,0,0,.6)}
+.nav-in{max-width:1240px;margin:0 auto;width:100%;padding:0 24px;display:flex;align-items:center;gap:28px}
+.logo{display:flex;align-items:center;gap:10px;color:var(--txt-d);font-family:var(--font-d);font-weight:700;font-size:1.02rem;text-decoration:none;letter-spacing:.2px}
+.logo svg{filter:drop-shadow(0 0 8px rgba(34,211,238,.6))}
+.nav-links{display:flex;gap:4px;margin-left:auto;position:relative}
+.nav-links a{color:var(--txt-d2);text-decoration:none;font-size:.86rem;font-weight:500;padding:8px 12px;border-radius:8px;position:relative;transition:color .2s,background .2s}
+.nav-links a:hover{color:var(--txt-d);background:rgba(255,255,255,.06)}
+.nav-links a.active{color:var(--cyan)}
+.nav-links a.active::after{content:"";position:absolute;left:12px;right:12px;bottom:2px;height:2px;border-radius:2px;background:var(--grad)}
+.dd{position:relative}
+.dd-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--txt-d2);font-size:.86rem;font-weight:500;padding:8px 12px;border-radius:8px}
+.dd-btn:hover{color:var(--txt-d);background:rgba(255,255,255,.06)}
+.dd-btn svg{transition:transform .25s}
+.dd.open .dd-btn svg{transform:rotate(180deg)}
+.dd-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:230px;background:var(--ink3);border:1px solid var(--line-d);border-radius:12px;padding:6px;box-shadow:0 20px 50px -12px rgba(0,0,0,.7);opacity:0;transform:translateY(-6px);pointer-events:none;transition:.22s}
+.dd.open .dd-menu{opacity:1;transform:none;pointer-events:auto}
+.dd-menu button,.dd-menu a{display:flex;width:100%;align-items:center;gap:10px;text-align:left;background:none;border:none;color:var(--txt-d2);font-size:.84rem;padding:9px 10px;border-radius:8px;text-decoration:none}
+.dd-menu button:hover,.dd-menu a:hover{background:rgba(34,211,238,.1);color:var(--txt-d)}
+.gh-btn{display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--ink);border:none;font-weight:600;font-size:.84rem;padding:8px 16px;border-radius:999px;transition:transform .15s,box-shadow .2s}
+.gh-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px -6px rgba(34,211,238,.5)}
+.burger{display:none;margin-left:auto;background:none;border:none;color:var(--txt-d);padding:6px}
+/* ---------- HERO ---------- */
+.hero{position:relative;background:var(--ink);color:var(--txt-d);padding:calc(var(--nav-h) + 64px) 0 96px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-20%;background:
+  radial-gradient(38% 45% at 78% 18%,rgba(34,211,238,.16),transparent 70%),
+  radial-gradient(30% 40% at 12% 82%,rgba(167,139,250,.14),transparent 70%),
+  radial-gradient(26% 34% at 55% 55%,rgba(45,212,191,.08),transparent 70%);
+  animation:aurora 16s ease-in-out infinite alternate}
+@keyframes aurora{from{transform:translate3d(-2%,-1%,0) rotate(-1deg)}to{transform:translate3d(2%,2%,0) rotate(1.5deg)}}
+#net{position:absolute;inset:0;width:100%;height:100%;opacity:.8}
+.hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-m);font-size:.7rem;letter-spacing:.14em;color:var(--cyan);border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.08);padding:5px 12px;border-radius:999px;margin-bottom:20px}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.hero h1{font-size:clamp(2rem,4.2vw,3.15rem);line-height:1.12;font-weight:700;letter-spacing:-.5px}
+.hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lede{margin:18px 0 28px;color:var(--txt-d2);max-width:52ch;font-size:.98rem}
+.cta-row{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:9px;border:none;border-radius:10px;font-weight:600;font-size:.88rem;padding:12px 20px;text-decoration:none;transition:transform .15s,box-shadow .25s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--grad);color:var(--ink);box-shadow:0 8px 26px -8px rgba(34,211,238,.55)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px -8px rgba(34,211,238,.7)}
+.btn-ghost{background:transparent;color:var(--txt-d);border:1px solid var(--line-d)}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn-sm{padding:8px 14px;font-size:.8rem;border-radius:8px}
+.btn-light{background:var(--ink);color:var(--txt-d)}
+.btn-light:hover{background:var(--ink3)}
+.btn-outline{background:var(--surface);color:var(--txt);border:1px solid var(--line)}
+.btn-outline:hover{border-color:var(--cyan);color:#0891b2}
+/* Failure Diff card */
+.diff-card{background:var(--surface);color:var(--txt);border-radius:16px;box-shadow:0 30px 70px -20px rgba(0,0,0,.65);overflow:hidden;transform:translateY(0);animation:rise .8s .2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.diff-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.diff-head h3{font-size:.95rem}
+.diff-nav{display:flex;gap:6px}
+.icon-btn{width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--line);background:var(--paper);border-radius:8px;color:var(--txt-2);transition:.2s}
+.icon-btn:hover{border-color:var(--cyan);color:#0891b2;background:rgba(34,211,238,.08)}
+.diff-tabs{display:flex;gap:2px;padding:10px 14px 0;border-bottom:1px solid var(--line);position:relative}
+.diff-tabs button{background:none;border:none;font-size:.78rem;font-weight:600;color:var(--txt-2);padding:8px 12px;border-radius:8px 8px 0 0;position:relative}
+.diff-tabs button.on{color:#0891b2}
+.diff-tabs button.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--grad)}
+.diff-body{padding:16px 18px;min-height:238px;font-size:.83rem}
+.diff-body .q{font-weight:600;font-size:.9rem;margin-bottom:10px}
+.ctx-block{border:1px solid var(--line);border-left:3px solid var(--blue);background:var(--paper);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.ctx-meta{display:flex;gap:8px;align-items:center;font-family:var(--font-m);font-size:.68rem;color:var(--txt-2);margin-bottom:5px}
+.mk{background:rgba(56,189,248,.18);color:#0369a1;border-radius:4px;padding:0 4px;font-family:var(--font-m);font-size:.72rem}
+.claim{border-radius:8px;padding:9px 12px;margin-bottom:7px;border:1px solid}
+.claim.ok{background:rgba(52,211,153,.09);border-color:rgba(52,211,153,.4)}
+.claim.bad{background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.4)}
+.claim .why{display:block;font-size:.72rem;color:var(--txt-2);margin-top:4px}
+.diff-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);background:var(--paper)}
+.diff-foot .lbl{font-size:.72rem;font-weight:600;color:var(--txt-2);margin-right:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:.7rem;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid}
+.chip .sw{width:7px;height:7px;border-radius:50%}
+.sev{font-family:var(--font-m);font-size:.68rem;font-weight:600;padding:3px 9px;border-radius:6px}
+/* ---------- STATS ---------- */
+.stats{background:var(--surface);border-bottom:1px solid var(--line);position:relative;z-index:3}
+.stats-in{display:flex;justify-content:center;align-items:center;gap:0;flex-wrap:wrap;padding:18px 24px}
+.stat{display:flex;align-items:baseline;gap:8px;padding:6px 26px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat b{font-family:var(--font-d);font-size:1.35rem;color:var(--ink)}
+.stat span{font-size:.8rem;color:var(--txt-2);font-weight:500}
+.stat .ok-ic{color:var(--green)}
+/* ---------- SECTIONS ---------- */
+.sec{padding:84px 0}
+.sec-head{margin-bottom:36px;max-width:64ch}
+.kicker{font-family:var(--font-m);font-size:.7rem;letter-spacing:.16em;color:#0891b2;font-weight:600;margin-bottom:10px}
+.sec h2{font-size:clamp(1.5rem,2.6vw,2.1rem);letter-spacing:-.4px;color:var(--ink)}
+.sec .sub{color:var(--txt-2);margin-top:10px;font-size:.94rem}
+.dark{background:var(--ink2);color:var(--txt-d)}
+.dark h2{color:var(--txt-d)}
+.dark .sub{color:var(--txt-d2)}
+.dark .kicker{color:var(--cyan)}
+/* taxonomy */
+.tax-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tax-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;transition:transform .22s,box-shadow .25s,border-color .25s;cursor:pointer}
+.tax-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--tc)}
+.tax-card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--tc)}
+.tax-ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;margin-bottom:14px;background:color-mix(in srgb,var(--tc) 12%,white);color:var(--tc)}
+.tax-card h3{font-size:.98rem;margin-bottom:6px}
+.tax-card p{font-size:.78rem;color:var(--txt-2);min-height:60px}
+.tax-count{display:flex;align-items:center;gap:10px;margin-top:12px}
+.tax-bar{flex:1;height:5px;border-radius:4px;background:var(--line);overflow:hidden}
+.tax-bar i{display:block;height:100%;background:var(--tc);border-radius:4px;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.tax-count b{font-family:var(--font-m);font-size:.75rem}
+.tax-go{margin-top:12px;font-size:.75rem;font-weight:600;color:#0891b2;display:flex;align-items:center;gap:5px}
+/* explorer */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px}
+.search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:8px 12px;background:var(--paper)}
+.search input{border:none;outline:none;background:none;flex:1;font-size:.86rem}
+.search kbd{font-family:var(--font-m);font-size:.65rem;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--txt-2);background:var(--surface)}
+.sel{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--paper);font-size:.8rem;color:var(--txt);outline:none}
+.sel:focus{border-color:var(--cyan)}
+.views-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.view-chip{display:inline-flex;align-items:center;gap:7px;font-size:.74rem;font-weight:600;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px}
+.view-chip button{border:none;background:none;color:var(--txt-2);font-size:.8rem;line-height:1}
+.view-chip button:hover{color:var(--rose)}
+.bulkbar{display:none;align-items:center;gap:12px;background:var(--ink);color:var(--txt-d);border-radius:12px;padding:10px 16px;margin-bottom:14px;font-size:.82rem}
+.bulkbar.on{display:flex}
+.table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:860px}
+thead th{position:sticky;top:0;background:var(--paper);text-align:left;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-2);padding:11px 14px;border-bottom:1px solid var(--line);z-index:2}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover{background:rgba(34,211,238,.05)}
+tbody tr.sel-row{background:rgba(34,211,238,.09)}
+td .qid{font-family:var(--font-m);font-size:.72rem;color:#0891b2;font-weight:600}
+td .qt{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt)}
+.rev-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pager{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:.8rem;color:var(--txt-2)}
+.pager .pg-btns{display:flex;gap:6px}
+.empty{padding:48px;text-align:center;color:var(--txt-2)}
+.empty b{display:block;font-family:var(--font-d);font-size:1.05rem;color:var(--txt);margin-bottom:6px}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(11,18,32,.55);backdrop-filter:blur(3px);z-index:70;opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--surface);z-index:80;transform:translateX(102%);transition:transform .38s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:-30px 0 70px -20px rgba(0,0,0,.4)}
+.drawer.on{transform:none}
+.dr-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.dr-head .qid{font-family:var(--font-m);font-weight:600;color:#0891b2}
+.dr-tabs{display:flex;gap:2px;padding:10px 16px 0;border-bottom:1px solid var(--line)}
+.dr-tabs button{background:none;border:none;font-size:.8rem;font-weight:600;color:var(--txt-2);padding:9px 13px;position:relative}
+.dr-tabs button.on{color:#0891b2}
+.dr-tabs button.on::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--grad)}
+.dr-body{flex:1;overflow-y:auto;padding:18px 20px}
+.dr-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;background:var(--paper)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-2);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 12px;outline:none;background:var(--surface)}
+.field textarea{min-height:74px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+.sec-chips{display:flex;gap:7px;flex-wrap:wrap}
+.sec-chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;font-size:.72rem;font-weight:600;padding:5px 12px;color:var(--txt-2)}
+.sec-chip.on{border-color:var(--tc);color:var(--tc);background:color-mix(in srgb,var(--tc) 10%,white)}
+pre.json{background:var(--ink);color:#c9d6ee;border-radius:12px;padding:16px;font-family:var(--font-m);font-size:.72rem;line-height:1.6;overflow:auto;max-height:420px}
+pre.json .key{color:var(--cyan)} pre.json .str{color:var(--green)} pre.json .num{color:var(--orange)} pre.json .bool{color:var(--fuchsia)} pre.json .null{color:var(--txt-d2)}
+/* metrics */
+.met-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.met-card{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:20px;position:relative;overflow:hidden}
+.met-card::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.18),transparent 70%)}
+.met-card .k{font-family:var(--font-m);font-size:.7rem;color:var(--txt-d2);letter-spacing:.1em}
+.met-card .v{font-family:var(--font-d);font-size:2.1rem;font-weight:700;color:var(--txt-d);margin:6px 0 10px}
+.met-card .v small{font-size:1rem;color:var(--cyan)}
+.meter{height:6px;border-radius:4px;background:var(--ink4);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:4px;background:var(--grad);width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.chart-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+.panel{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:22px}
+.panel h3{font-size:.95rem;margin-bottom:4px}
+.panel .hint{font-size:.74rem;color:var(--txt-d2);margin-bottom:16px}
+.cm{display:grid;grid-template-columns:auto repeat(7,1fr);gap:3px;font-family:var(--font-m);font-size:.66rem}
+.cm .h{color:var(--txt-d2);display:grid;place-items:center;padding:4px 2px}
+.cm .cell{border-radius:6px;display:grid;place-items:center;padding:9px 2px;color:var(--txt-d);transition:transform .12s;cursor:default}
+.cm .cell:hover{transform:scale(1.12);outline:1px solid var(--cyan)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:.68rem;color:var(--txt-d2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:8px;height:8px;border-radius:2px}
+/* schema */
+.schema-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.dict{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:sticky;top:calc(var(--nav-h) + 16px)}
+.dict table{min-width:0}
+.dict td{font-size:.76rem}
+.dict .fn{font-family:var(--font-m);font-size:.72rem;color:#0891b2;font-weight:600}
+.dict .ty{font-family:var(--font-m);font-size:.68rem;color:var(--violet)}
+.req{font-size:.62rem;font-weight:700;color:var(--rose);border:1px solid rgba(244,63,94,.4);border-radius:5px;padding:1px 6px}
+.opt{font-size:.62rem;font-weight:700;color:var(--txt-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+/* structure */
+.tree{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:22px;font-family:var(--font-m);font-size:.76rem;line-height:2.05;color:var(--txt-d2);overflow:auto}
+.tree .dir{color:var(--cyan);font-weight:600}
+.tree .cm2{color:#5b6b8c}
+.tree .file{color:var(--txt-d)}
+.pipe{display:flex;gap:0;align-items:stretch;margin-top:24px;flex-wrap:wrap}
+.pipe-step{flex:1;min-width:130px;background:var(--ink3);border:1px solid var(--line-d);padding:14px 16px;position:relative}
+.pipe-step:first-child{border-radius:12px 0 0 12px}
+.pipe-step:last-child{border-radius:0 12px 12px 0}
+.pipe-step b{display:block;font-family:var(--font-d);font-size:.82rem;color:var(--txt-d)}
+.pipe-step span{font-size:.68rem;color:var(--txt-d2)}
+.pipe-step::after{content:"→";position:absolute;right:-9px;top:50%;transform:translateY(-50%);color:var(--cyan);z-index:2;font-size:.9rem}
+.pipe-step:last-child::after{content:""}
+/* roadmap */
+.road{background:var(--surface);color:var(--txt);border-radius:16px;padding:28px 30px;box-shadow:var(--shadow)}
+.road h3{text-align:center;font-size:1.05rem;margin-bottom:26px}
+.steps{display:flex;position:relative}
+.steps::before{content:"";position:absolute;top:9px;left:8%;right:8%;height:3px;background:var(--line);border-radius:3px}
+.steps .prog{position:absolute;top:9px;left:8%;height:3px;background:var(--grad);border-radius:3px;width:0;transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+.step{flex:1;text-align:center;position:relative;z-index:1}
+.step .nd{width:21px;height:21px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;background:var(--surface);border:3px solid var(--line);font-size:.6rem;color:transparent;transition:.3s}
+.step.done .nd{background:var(--ink);border-color:var(--ink);color:var(--cyan)}
+.step.active .nd{border-color:var(--cyan);box-shadow:0 0 0 5px rgba(34,211,238,.18);animation:pulse 2s infinite}
+.step b{display:block;font-size:.78rem;font-family:var(--font-d)}
+.step span{font-size:.66rem;color:var(--txt-2)}
+/* resources */
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.res-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:10px;transition:transform .2s,box-shadow .25s}
+.res-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.res-card h3{font-size:.95rem}
+.res-card p{font-size:.8rem;color:var(--txt-2);flex:1}
+/* footer */
+footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
+.foot-in{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.foot-in b{color:var(--txt-d);display:block;font-size:.82rem}
+/* modal */
+.modal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal.on{opacity:1;pointer-events:auto}
+.modal .box{background:var(--surface);border-radius:16px;max-width:720px;width:100%;max-height:82vh;overflow-y:auto;padding:30px 32px;transform:translateY(14px);transition:transform .3s;box-shadow:0 40px 90px -20px rgba(0,0,0,.5)}
+.modal.on .box{transform:none}
+.modal h3{font-size:1.2rem;margin-bottom:6px}
+.modal h4{font-size:.9rem;margin:18px 0 6px;color:#0891b2}
+.modal p,.modal li{font-size:.84rem;color:var(--txt-2)}
+.modal ol{padding-left:20px;display:grid;gap:6px}
+.modal .x{float:right}
+/* toast */
+.toasts{position:fixed;bottom:22px;right:22px;z-index:100;display:flex;flex-direction:column;gap:10px}
+.toast{display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--txt-d);border:1px solid var(--line-d);border-left:3px solid var(--cyan);border-radius:12px;padding:12px 16px;font-size:.82rem;box-shadow:0 16px 40px -12px rgba(0,0,0,.6);animation:tin .3s cubic-bezier(.2,.8,.2,1)}
+.toast.warn{border-left-color:var(--amber)}
+.toast.ok{border-left-color:var(--green)}
+.toast button{background:rgba(34,211,238,.15);border:none;color:var(--cyan);font-weight:600;font-size:.76rem;padding:6px 12px;border-radius:8px}
+@keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+/* reveal */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
+.rv.in{opacity:1;transform:none}
+.src-badge{font-family:var(--font-m);font-size:.66rem;padding:4px 10px;border-radius:999px;border:1px solid rgba(52,211,153,.5);color:var(--green);background:rgba(52,211,153,.08)}
+.src-badge.seed{border-color:rgba(245,158,11,.5);color:var(--amber);background:rgba(245,158,11,.08)}
+@media (max-width:1020px){
+  .hero-in{grid-template-columns:1fr}
+  .tax-grid{grid-template-columns:repeat(2,1fr)}
+  .chart-grid,.schema-grid{grid-template-columns:1fr}
+  .dict{position:static}
+  .met-grid{grid-template-columns:repeat(3,1fr)}
+  .res-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .nav-links{position:fixed;top:var(--nav-h);left:0;right:0;background:var(--ink2);flex-direction:column;padding:14px;border-bottom:1px solid var(--line-d);display:none}
+  .nav-links.open{display:flex}
+  .burger{display:block}
+  .gh-btn{display:none}
+  .dd-menu{position:static;opacity:1;transform:none;pointer-events:auto;display:none;box-shadow:none}
+  .dd.open .dd-menu{display:block}
+  .tax-grid,.met-grid,.res-grid{grid-template-columns:1fr}
+  .stat{border-right:none;padding:6px 14px}
+  .steps{flex-direction:column;gap:18px}
+  .steps::before,.steps .prog{display:none}
+  .step{display:flex;align-items:center;gap:12px;text-align:left}
+  .step .nd{margin:0}
+  .pipe-step{border-radius:12px!important;min-width:100%}
+  .pipe-step::after{content:"↓"!important;right:auto;left:50%;top:auto;bottom:-14px;transform:translateX(-50%)}
+}
+/* The reference landing view is a dense, desktop-style dashboard even at
+   narrow capture widths. Keep the primary navigation and overview visible
+   instead of collapsing them into a mobile menu. */
+@media (max-width:760px){
+  :root{--nav-h:23px;--r:5px}
+  .wrap{padding-left:12px;padding-right:12px}
+  nav{height:var(--nav-h)}
+  .nav-in{padding:0 12px;gap:8px}
+  .logo{gap:4px;font-size:7px;letter-spacing:0}
+  .logo svg{width:12px;height:12px}
+  .nav-links{position:static;display:flex;flex-direction:row;gap:0;margin-left:auto;
+    background:none;border:0;padding:0;white-space:nowrap}
+  .nav-links a,.dd-btn{font-size:6px;padding:4px 5px;border-radius:3px}
+  .nav-links a.active::after{left:5px;right:5px;bottom:0;height:1px}
+  .dd-menu{top:calc(100% + 4px);min-width:130px}
+  .dd-menu button,.dd-menu a{font-size:7px;padding:6px}
+  .gh-btn{display:flex;font-size:6px;gap:3px;padding:4px 7px}
+  .gh-btn svg{width:8px;height:8px}
+  .burger{display:none}
+
+  .hero{padding:calc(var(--nav-h) + 18px) 0 12px}
+  .hero-in{grid-template-columns:1.04fr .96fr;gap:12px;align-items:start}
+  .eyebrow{display:none}
+  .hero h1{font-size:16px;line-height:1.08;letter-spacing:-.25px}
+  .hero p.lede{margin:6px 0 8px;font-size:6px;line-height:1.3;max-width:42ch;max-height:25px;overflow:hidden}
+  .cta-row{gap:5px}
+  .btn{font-size:6px;padding:6px 8px;border-radius:4px;gap:3px}
+  .diff-card{border-radius:5px}
+  .diff-head{padding:5px 7px}
+  .diff-head h3{font-size:7px}
+  .diff-nav{gap:2px}
+  .icon-btn{width:16px;height:16px;font-size:8px;border-radius:3px}
+  .diff-tabs{gap:0;padding:3px 4px 0}
+  .diff-tabs button{font-size:5px;padding:4px 4px}
+  .diff-body{padding:5px 7px;height:30px;min-height:0;overflow:hidden;font-size:6px;line-height:1.2}
+  .diff-body p{font-size:6px!important;line-height:1.25;margin:2px 0!important;max-height:30px;overflow:hidden}
+  .diff-body .q{font-size:6px;margin-bottom:2px}
+  .ctx-block{padding:4px 5px;margin-bottom:3px;border-radius:3px}
+  .ctx-meta{font-size:5px;margin-bottom:2px}
+  .mk{font-size:5px}
+  .claim{padding:4px 5px;margin-bottom:3px;border-radius:3px}
+  .claim .why{font-size:5px;margin-top:2px}
+  .diff-foot{gap:3px;padding:3px 7px;height:20px;flex-wrap:nowrap;overflow:hidden}
+  .diff-foot .lbl,.chip,.sev{font-size:5px}
+  .chip{padding:2px 4px;gap:2px}
+  .chip .sw{width:4px;height:4px}
+  .sev{padding:2px 4px;border-radius:3px}
+
+  .stats-in{padding:5px 8px;justify-content:space-between}
+  .stat{gap:3px;padding:1px 5px}
+  .stat b{font-size:8px}
+  .stat span{font-size:5px}
+  .sec{padding:12px 0}
+  #taxonomy .sec-head{display:none}
+  .tax-grid{grid-template-columns:repeat(5,1fr);gap:4px}
+  .tax-card{padding:6px;border-radius:4px}
+  .tax-card::before{height:1px}
+  .tax-ic{width:18px;height:18px;border-radius:4px;margin-bottom:4px;font-size:10px}
+  .tax-card h3{font-size:6px;line-height:1.1;margin-bottom:2px}
+  .tax-card p{font-size:4.7px;line-height:1.25;min-height:25px}
+  .tax-count{gap:3px;margin-top:4px}
+  .tax-bar{height:2px}
+  .tax-count b,.tax-go{font-size:5px}
+  .tax-go{margin-top:3px;gap:2px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-in">
+    <a class="logo" href="#overview">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke="url(#lg)" stroke-width="1.6"/><path d="M8 12l3 3 5-6" stroke="url(#lg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      RAG-FailureBench
+    </a>
+    <button class="burger" id="burger" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="nav-links" id="navLinks">
+      <a href="#overview" data-sec="overview" class="active">Overview</a>
+      <a href="#taxonomy" data-sec="taxonomy">Failure Taxonomy</a>
+      <a href="#schema" data-sec="schema">Dataset Schema</a>
+      <a href="#structure" data-sec="structure">Project Structure</a>
+      <div class="dd" id="dd">
+        <button class="dd-btn" id="ddBtn">Resources <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="dd-menu">
+          <button data-act="card">📄 Dataset Card</button>
+          <button data-act="guide">🧭 Annotation Guide</button>
+          <button data-act="downloads">⬇ Downloads & Export</button>
+          <button data-act="metrics">📈 Evaluation Metrics</button>
+          <a href="https://www.kaggle.com/datasets/yogeshm01/rag-error-analysis-dataset-for-llm-evaluation" target="_blank" rel="noopener">🗂 Source on Kaggle ↗</a>
+        </div>
+      </div>
+    </div>
+    <button class="gh-btn" id="ghBtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> GitHub</button>
+  </div>
+</nav>
+
+<!-- ============ HERO / OVERVIEW ============ -->
+<section class="hero" id="overview">
+  <canvas id="net"></canvas>
+  <div class="wrap hero-in">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> BENCHMARK v1.0 · CC BY 4.0 · <span id="srcBadge" class="src-badge seed">seeded preview</span></span>
+      <h1>Build Robust RAG Systems:<br><span class="grad">Analyze &amp; Benchmark AI Failures</span></h1>
+      <p class="lede">A comprehensive dataset and evaluation pipeline for identifying and classifying Retrieval-Augmented Generation errors — retrieval gaps, hallucinations, contradictions, citation faults and reasoning slips — curated for the Kaggle community.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://www.kaggle.com/datasets/yogeshm01/rag-error-analysis-dataset-for-llm-evaluation" target="_blank" rel="noopener">Explore Dataset on Kaggle ↗</a>
+        <button class="btn btn-ghost" data-act="guide">View Docs &amp; Annotation Guide</button>
+      </div>
+    </div>
+    <div class="diff-card" id="diffCard">
+      <div class="diff-head">
+        <h3>Failure Diff</h3>
+        <div class="diff-nav">
+          <button class="icon-btn" id="diffPrev" title="Previous example">←</button>
+          <button class="icon-btn" id="diffRand" title="Random example">⤨</button>
+          <button class="icon-btn" id="diffNext" title="Next example">→</button>
+        </div>
+      </div>
+      <div class="diff-tabs" id="diffTabs">
+        <button data-t="query" class="on">Query</button>
+        <button data-t="context">Retrieved Context</button>
+        <button data-t="output">LLM Output</button>
+        <button data-t="label">Detected Label</button>
+      </div>
+      <div class="diff-body" id="diffBody"></div>
+      <div class="diff-foot" id="diffFoot"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATS ============ -->
+<div class="stats">
+  <div class="stats-in" id="statsBar"></div>
+</div>
+
+<!-- ============ TAXONOMY ============ -->
+<section class="sec" id="taxonomy">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">01 · FAILURE TAXONOMY</div>
+      <h2>Seven failure modes, one root-cause rule</h2>
+      <p class="sub">Every example carries a primary label (earliest root cause) plus optional secondary labels. Click a card to inspect live examples in the explorer.</p>
+    </div>
+    <div class="tax-grid" id="taxGrid"></div>
+  </div>
+</section>
+
+<!-- ============ EXPLORER ============ -->
+<section class="sec" id="explorer" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">02 · DATASET EXPLORER</div>
+      <h2>Search, audit &amp; annotate every record</h2>
+      <p class="sub">Live search, filters, saved views, bulk export and a review drawer with undo. Annotations persist locally in your browser.</p>
+    </div>
+    <div class="toolbar rv">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#98a2b3" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="text" placeholder="Search questions, answers, domains, IDs…">
+        <kbd>/</kbd>
+      </div>
+      <select class="sel" id="fLabel"></select>
+      <select class="sel" id="fDomain"></select>
+      <select class="sel" id="fSeverity"></select>
+      <select class="sel" id="fSplit"></select>
+      <select class="sel" id="fReviewed">
+        <option value="all">Review: all</option>
+        <option value="reviewed">Reviewed</option>
+        <option value="unreviewed">Unreviewed</option>
+      </select>
+      <select class="sel" id="fSort">
+        <option value="id">Sort: ID</option>
+        <option value="severity">Sort: severity</option>
+        <option value="label">Sort: label</option>
+        <option value="domain">Sort: domain</option>
+      </select>
+      <button class="btn btn-outline btn-sm" id="saveView">☆ Save view</button>
+      <button class="btn btn-light btn-sm" id="newRec">＋ New example</button>
+    </div>
+    <div class="views-row" id="viewsRow"></div>
+    <div class="bulkbar" id="bulkbar">
+      <b id="bulkCount">0 selected</b>
+      <button class="btn btn-primary btn-sm" id="bulkExport">Export selected</button>
+      <button class="btn btn-ghost btn-sm" id="bulkReview">Mark reviewed</button>
+      <button class="btn btn-ghost btn-sm" id="bulkClear" style="margin-left:auto">Clear</button>
+    </div>
+    <div class="table-wrap light-scroll rv">
+      <table>
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" id="checkAll"></th>
+          <th>ID</th><th>Domain</th><th>Question</th><th>Primary label</th><th>Severity</th><th>Split</th><th>Review</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" style="display:none"><b>No records match</b>Adjust filters or clear the search to see the benchmark again.</div>
+    </div>
+    <div class="pager">
+      <span id="pageInfo"></span>
+      <div class="pg-btns">
+        <button class="icon-btn" id="pgPrev">←</button>
+        <button class="icon-btn" id="pgNext">→</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ METRICS ============ -->
+<section class="sec dark" id="metrics">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">03 · EVALUATION</div>
+      <h2>Retrieval &amp; classification, measured honestly</h2>
+      <p class="sub">Zero-shot FAISS baseline (all-MiniLM-L6-v2, index built in Colab) and a TF-IDF + Logistic Regression failure classifier on the held-out test split. Macro-F1 reported alongside accuracy because the label distribution is imbalanced.</p>
+    </div>
+    <div class="met-grid rv" id="metGrid"></div>
+    <div class="chart-grid">
+      <div class="panel rv">
+        <h3>Per-class F1 — test split</h3>
+        <div class="hint">Seven separable hues · direct value labels · n = 240</div>
+        <svg id="f1chart" viewBox="0 0 720 250" width="100%" role="img" aria-label="Per-class F1 bar chart"></svg>
+      </div>
+      <div class="panel rv">
+        <h3>Confusion matrix</h3>
+        <div class="hint">Rows = true label · columns = predicted · hover any cell</div>
+        <div class="cm" id="cm"></div>
+        <div class="legend" id="cmLegend"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCHEMA ============ -->
+<section class="sec" id="schema">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">04 · DATASET SCHEMA</div>
+      <h2>Pydantic-validated, citation-aware records</h2>
+      <p class="sub">Every row passes strict schema validation: unique IDs, seven approved labels, citation integrity, score bounds and document-level split isolation.</p>
+    </div>
+    <div class="schema-grid">
+      <div class="dict light-scroll rv">
+        <table><thead><tr><th>Field</th><th>Type</th><th></th><th>Purpose</th></tr></thead><tbody id="dictBody"></tbody></table>
+      </div>
+      <div class="rv">
+        <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+          <select class="sel" id="schemaPick" style="flex:1"></select>
+          <button class="btn btn-outline btn-sm" id="copyJson">Copy</button>
+          <button class="btn btn-light btn-sm" id="openJson">Open in explorer</button>
+        </div>
+        <pre class="json" id="jsonView"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STRUCTURE ============ -->
+<section class="sec dark" id="structure">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">05 · PROJECT STRUCTURE</div>
+      <h2>A modular, reproducible pipeline</h2>
+      <p class="sub">Heavy embedding work runs once in Colab; the laptop only loads artifacts and encodes single queries. Every stage is a testable module.</p>
+    </div>
+    <div class="chart-grid">
+      <div class="tree rv" id="tree"></div>
+      <div class="rv">
+        <div class="pipe" id="pipe"></div>
+        <div class="road" style="margin-top:24px">
+          <h3>Project Roadmap</h3>
+          <div class="steps" id="steps"><div class="prog" id="roadProg"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESOURCES ============ -->
+<section class="sec" id="resources">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">06 · RESOURCES</div>
+      <h2>Everything needed to reuse the benchmark</h2>
+      <p class="sub">Documentation, exports and attribution. Source data © Yogesh Mishra, licensed CC BY 4.0 — attribution required on redistribution.</p>
+    </div>
+    <div class="res-grid">
+      <div class="res-card rv"><h3>📄 Dataset Card</h3><p>Motivation, collection method, synthetic-generation process, validation, intended &amp; non-intended uses, limitations, ethics and version history.</p><button class="btn btn-light btn-sm" data-act="card">Read dataset card</button></div>
+      <div class="res-card rv"><h3>🧭 Annotation Guide</h3><p>The seven adjudication questions, the root-cause multi-label rule, severity rubric and the two-annotator Cohen's kappa protocol.</p><button class="btn btn-light btn-sm" data-act="guide">Read annotation guide</button></div>
+      <div class="res-card rv" id="downloads"><h3>⬇ Downloads &amp; Export</h3><p>Export the current filtered view or your bulk selection as JSONL or CSV — generated live from the loaded records, including your annotations.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="dlJsonl">JSONL</button><button class="btn btn-outline btn-sm" id="dlCsv">CSV</button></div>
+      </div>
+      <div class="res-card rv"><h3>🗂 Kaggle Source</h3><p>The original 1,200-example, 12-domain benchmark by Yogesh Mishra. Eight source categories mapped to our seven canonical labels.</p><a class="btn btn-light btn-sm" href="https://www.kaggle.com/datasets/yogeshm01/rag-error-analysis-dataset-for-llm-evaluation" target="_blank" rel="noopener">Open on Kaggle ↗</a></div>
+      <div class="res-card rv"><h3>🧪 Validation Suite</h3><p>Pydantic schema checks, duplicate-ID detection, citation integrity and document-level train/test leakage audits run on every export.</p><button class="btn btn-light btn-sm" id="runAudit">Run live audit</button></div>
+      <div class="res-card rv"><h3>⚖️ License &amp; Attribution</h3><p>CC BY 4.0. Cite: <span class="mono" style="font-size:.72rem">Mishra, Y. — RAG Error Analysis Dataset for LLM Evaluation (Kaggle, 2026)</span>. Pipeline &amp; taxonomy: Sravan Kumar (CSE-AIML).</p><button class="btn btn-outline btn-sm" id="copyCite">Copy citation</button></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><b>Collaborator</b>Sravan Kumar (CSE-AIML)</div>
+    <div><b>Teammate</b>RAG-FailureBench Lead AI</div>
+    <div><b>Stack</b>Python · FAISS · Sentence-Transformers · Ollama · scikit-learn</div>
+    <div><b>Design</b>Hand-rolled CSS, Tailwind-inspired utility discipline</div>
+  </div>
+</footer>
+
+<!-- drawer -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Record detail">
+  <div class="dr-head">
+    <span class="qid" id="drId"></span>
+    <span id="drDomain" class="chip" style="--tc:#38bdf8"></span>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="icon-btn" id="drPrev" title="Previous">←</button>
+      <button class="icon-btn" id="drNext" title="Next">→</button>
+      <button class="icon-btn" id="drClose" title="Close (Esc)">✕</button>
+    </div>
+  </div>
+  <div class="dr-tabs" id="drTabs">
+    <button data-t="diff" class="on">Failure Diff</button>
+    <button data-t="audit">Citation Audit</button>
+    <button data-t="json">JSON</button>
+    <button data-t="annotate">Annotate</button>
+  </div>
+  <div class="dr-body light-scroll" id="drBody"></div>
+  <div class="dr-foot" id="drFoot"></div>
+</aside>
+
+<!-- modal -->
+<div class="modal" id="modal"><div class="box light-scroll" id="modalBox"></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+"use strict";
+/* ================= DATA ================= */
+const LABELS = {
+  hallucination:{c:"#f43f5e",icon:"🧠",def:"The answer includes a factual claim not supported by the retrieved context."},
+  retrieval_failure:{c:"#38bdf8",icon:"🔍",def:"Retrieved context lacks sufficient relevant evidence to answer the question."},
+  contradiction:{c:"#f59e0b",icon:"⚠️",def:"The answer directly conflicts with the retrieved context or ground truth."},
+  wrong_citation:{c:"#e879f9",icon:"🔗",def:"A citation is present but does not support the claim it is attached to."},
+  reasoning_error:{c:"#a78bfa",icon:"🧮",def:"Evidence exists, but the model miscalculates, misorders or mis-infers."},
+  partial_answer:{c:"#fb923c",icon:"📉",def:"Relevant and partly correct, but misses one or more required facts."},
+  no_failure:{c:"#34d399",icon:"✅",def:"Correct, complete, grounded in context and properly cited."}
+};
+const LKEYS = Object.keys(LABELS);
+const SEV = {low:"#34d399",medium:"#f59e0b",high:"#fb923c",critical:"#f43f5e"};
+const SEV_RANK = {low:0,medium:1,high:2,critical:3};
+
+const SEED = [
+ {example_id:"rag_000001",domain:"technology",question_type:"single_hop",question:"What does the primer say a vector database does?",document_id:"doc_0001",document_title:"Synthetic Intro to Vector Databases",source_license:"synthetic",ground_truth_answer:"It stores vector embeddings and supports similarity search.",required_facts:["stores vector embeddings","supports similarity search"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0001",rank:1,retrieval_score:.92,text:"A vector database stores embedding vectors and retrieves similar items using vector similarity search.",is_relevant:true}],generated_answer:"A vector database stores embeddings and enables similarity search. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"A vector database stores embeddings and enables similarity search.",citation_context_ids:["ctx_001"],is_supported:true,evidence_explanation:"Context explicitly states storage of embedding vectors and similarity search."}],primary_failure_label:"no_failure",secondary_failure_labels:[],error_explanation:"Correct, complete, grounded and cited.",severity:"low",annotation_method:"synthetic_rule",split:"train"},
+ {example_id:"rag_000002",domain:"healthcare",question_type:"single_hop",question:"When did the Northside Community Clinic open?",document_id:"doc_0002",document_title:"Synthetic Clinic Records Summary",source_license:"synthetic",ground_truth_answer:"It opened in 1985.",required_facts:["opened in 1985"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0002",rank:1,retrieval_score:.88,text:"The Northside Community Clinic opened in 1985 with a single general practitioner.",is_relevant:true}],generated_answer:"The clinic opened in 1985 and was founded by Dr. Rao. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"The clinic opened in 1985.",citation_context_ids:["ctx_001"],is_supported:true,evidence_explanation:"Opening year stated in context."},{claim:"The clinic was founded by Dr. Rao.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"No founder is named anywhere in the context."}],primary_failure_label:"hallucination",secondary_failure_labels:[],error_explanation:"Founder detail is invented; absent from retrieved context.",severity:"high",annotation_method:"synthetic_rule",split:"train"},
+ {example_id:"rag_000003",domain:"finance",question_type:"comparison",question:"How much faster is Service B than Service A?",document_id:"doc_0003",document_title:"Synthetic API Throughput Report",source_license:"synthetic",ground_truth_answer:"Service B (30 req/s) is 50% faster than Service A (20 req/s).",required_facts:["B handles 30 req/s","A handles 20 req/s","B is 50% faster"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0003",rank:1,retrieval_score:.9,text:"Service A handles 20 requests per second. Service B handles 30 requests per second.",is_relevant:true}],generated_answer:"Service B is 33.3% faster than Service A. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"Service B is 33.3% faster than Service A.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Raw rates are present but the percentage is miscalculated; correct increase is 50%."}],primary_failure_label:"reasoning_error",secondary_failure_labels:[],error_explanation:"Evidence retrieved; arithmetic wrong (30 vs 20 = +50%).",severity:"medium",annotation_method:"synthetic_rule",split:"train"},
+ {example_id:"rag_000004",domain:"education",question_type:"single_hop",question:"What dropout-prevention measures are listed in the district handbook?",document_id:"doc_0004",document_title:"Synthetic District Handbook",source_license:"synthetic",ground_truth_answer:"Mentor pairing and weekly attendance check-ins.",required_facts:["mentor pairing","weekly attendance check-ins"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0005",rank:1,retrieval_score:.31,text:"The cafeteria menu rotates seasonally and includes a vegetarian option.",is_relevant:false},{context_id:"ctx_002",document_id:"doc_0006",rank:2,retrieval_score:.27,text:"Parking permits for staff renew every August.",is_relevant:false}],generated_answer:"The handbook requires daily homework grading and Saturday tutoring. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"The handbook requires daily homework grading and Saturday tutoring.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Retrieved context is about cafeteria menus; nothing on dropout prevention."}],primary_failure_label:"retrieval_failure",secondary_failure_labels:["hallucination"],error_explanation:"Root cause: no relevant evidence retrieved; model then invented policy details.",severity:"critical",annotation_method:"synthetic_rule",split:"train"},
+ {example_id:"rag_000005",domain:"legal",question_type:"single_hop",question:"Does the supervised technique in the filing memo require labeled data?",document_id:"doc_0007",document_title:"Synthetic Filing Memo",source_license:"synthetic",ground_truth_answer:"Yes — the memo states it requires labeled data.",required_facts:["requires labeled data"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0007",rank:1,retrieval_score:.85,text:"The supervised technique described in this memo requires labeled data for training.",is_relevant:true}],generated_answer:"No, the technique does not require labeled data. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"The technique does not require labeled data.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Context states the exact opposite."}],primary_failure_label:"contradiction",secondary_failure_labels:[],error_explanation:"Answer directly conflicts with retrieved context.",severity:"high",annotation_method:"synthetic_rule",split:"validation"},
+ {example_id:"rag_000006",domain:"environment",question_type:"comparison",question:"Which method is faster, Method A or Method B?",document_id:"doc_0008",document_title:"Synthetic Sensor Calibration Note",source_license:"synthetic",ground_truth_answer:"The note only says Method A uses less memory; no speed comparison.",required_facts:["A uses less memory","no speed comparison in source"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0008",rank:1,retrieval_score:.8,text:"Method A uses less memory than Method B during calibration runs.",is_relevant:true}],generated_answer:"Method A is faster than Method B. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"Method A is faster than Method B.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"ctx_001 supports a memory claim, not a speed claim."}],primary_failure_label:"wrong_citation",secondary_failure_labels:["hallucination"],error_explanation:"Citation present but does not support the attached speed claim.",severity:"medium",annotation_method:"synthetic_rule",split:"validation"},
+ {example_id:"rag_000007",domain:"travel",question_type:"multi_hop",question:"Name the three advantages of the regional rail pass in the brochure.",document_id:"doc_0009",document_title:"Synthetic Rail Brochure",source_license:"synthetic",ground_truth_answer:"Fixed daily cost, no reservation fees on local trains, group discounts.",required_facts:["fixed daily cost","no reservation fees","group discounts"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0009",rank:1,retrieval_score:.87,text:"The regional rail pass offers a fixed daily cost, no reservation fees on local trains, and group discounts for parties of three or more.",is_relevant:true}],generated_answer:"The rail pass offers a fixed daily cost. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"The rail pass offers a fixed daily cost.",citation_context_ids:["ctx_001"],is_supported:true,evidence_explanation:"Supported, but only one of three required facts included."}],primary_failure_label:"partial_answer",secondary_failure_labels:[],error_explanation:"Correct and grounded but omits two required advantages.",severity:"medium",annotation_method:"synthetic_rule",split:"validation"},
+ {example_id:"rag_000008",domain:"sports",question_type:"single_hop",question:"What was the team's win rate in 2024?",document_id:"doc_0010",document_title:"Synthetic Season Statistics Sheet",source_license:"synthetic",ground_truth_answer:"62%.",required_facts:["62% win rate in 2024"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0010",rank:1,retrieval_score:.91,text:"The team finished the 2024 season with a win rate of 62 percent.",is_relevant:true}],generated_answer:"The team's win rate in 2024 was 62%. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"The team's win rate in 2024 was 62%.",citation_context_ids:["ctx_001"],is_supported:true,evidence_explanation:"Directly stated."}],primary_failure_label:"no_failure",secondary_failure_labels:[],error_explanation:"Correct, complete, grounded, cited.",severity:"low",annotation_method:"synthetic_rule",split:"test"},
+ {example_id:"rag_000009",domain:"food",question_type:"single_hop",question:"What storage temperature does the guide recommend for rice?",document_id:"doc_0011",document_title:"Synthetic Pantry Guide",source_license:"synthetic",ground_truth_answer:"21°C or below.",required_facts:["21C or below"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0011",rank:1,retrieval_score:.86,text:"Store dry rice at 21 degrees Celsius or below to slow spoilage.",is_relevant:true}],generated_answer:"Store rice at 21C or below, which also prevents all bacterial growth. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"Storing rice at 21C or below prevents all bacterial growth.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Context only says the temperature slows spoilage; absolute claim invented."}],primary_failure_label:"hallucination",secondary_failure_labels:["wrong_citation"],error_explanation:"Temperature supported; absolute bacterial claim unsupported and mis-cited.",severity:"high",annotation_method:"synthetic_rule",split:"test"},
+ {example_id:"rag_000010",domain:"history",question_type:"comparison",question:"Which reform happened first: land survey or census?",document_id:"doc_0012",document_title:"Synthetic Empire Timeline",source_license:"synthetic",ground_truth_answer:"The land survey came first.",required_facts:["land survey first","census later"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0012",rank:1,retrieval_score:.84,text:"The land survey was completed in year 12.",is_relevant:true},{context_id:"ctx_002",document_id:"doc_0012",rank:2,retrieval_score:.79,text:"The empire-wide census was conducted in year 15.",is_relevant:true}],generated_answer:"The land survey (year 12) happened before the census (year 15). [ctx_001] [ctx_002]",answer_citations:["ctx_001","ctx_002"],citation_spans:[{claim:"The land survey (year 12) happened before the census (year 15).",citation_context_ids:["ctx_001","ctx_002"],is_supported:true,evidence_explanation:"Both years present; ordering valid."}],primary_failure_label:"no_failure",secondary_failure_labels:[],error_explanation:"Correct multi-hop ordering grounded in both contexts.",severity:"low",annotation_method:"synthetic_rule",split:"test"},
+ {example_id:"rag_000101",domain:"business",question_type:"single_hop",question:"What does the document say about market positioning?",document_id:"doc_0101",document_title:"Strategy Brief — Market Positioning",source_license:"CC BY 4.0 (Yogesh Mishra)",ground_truth_answer:"Market positioning is linked to causal factor number 2.",required_facts:["linked to causal factor 2"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0101",rank:1,retrieval_score:.83,text:"The context indicates that market positioning is linked to causal factor number 2. A risk factor is also mentioned.",is_relevant:false}],generated_answer:"The answer concerns an unrelated topic and says that market positioning is mostly about a different domain.",answer_citations:[],citation_spans:[{claim:"Market positioning is mostly about a different domain.",citation_context_ids:[],is_supported:false,evidence_explanation:"Retrieved passage is unrelated to the question's intent."}],primary_failure_label:"retrieval_failure",secondary_failure_labels:[],error_explanation:"Context insufficient / unrelated to the question.",severity:"high",annotation_method:"llm_judge",split:"train"},
+ {example_id:"rag_000102",domain:"science",question_type:"single_hop",question:"Summarize the main fact about exoplanets from the passage.",document_id:"doc_0102",document_title:"Astronomy Note — Exoplanets",source_license:"CC BY 4.0 (Yogesh Mishra)",ground_truth_answer:"Exoplanets is linked to warning sign number 1.",required_facts:["linked to warning sign 1"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0102",rank:1,retrieval_score:.81,text:"The passage states that exoplanets is linked to warning sign number 1. A required step is also mentioned.",is_relevant:true}],generated_answer:"The context does not provide enough information to answer confidently.",answer_citations:[],citation_spans:[{claim:"Not enough information to answer.",citation_context_ids:[],is_supported:false,evidence_explanation:"Relevant evidence was available but the model refused / ignored it."}],primary_failure_label:"retrieval_failure",secondary_failure_labels:["partial_answer"],error_explanation:"Source category 'Missing Context' mapped to retrieval_failure per taxonomy decision.",severity:"medium",annotation_method:"llm_judge",split:"train"},
+ {example_id:"rag_000103",domain:"travel",question_type:"single_hop",question:"What is the correct answer regarding daily spending?",document_id:"doc_0103",document_title:"Budget Travel — Daily Spending",source_license:"CC BY 4.0 (Yogesh Mishra)",ground_truth_answer:"Daily spending is linked to deadline number 16.",required_facts:["linked to deadline 16"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0103",rank:1,retrieval_score:.84,text:"The context indicates that daily spending is linked to deadline number 16. An estimated cost is also mentioned.",is_relevant:true}],generated_answer:"The key point is that daily spending is not linked to deadline number 16; instead, it is linked to the opposite. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"Daily spending is not linked to deadline number 16.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Direct negation of the retrieved statement."}],primary_failure_label:"contradiction",secondary_failure_labels:[],error_explanation:"Answer negates the context.",severity:"high",annotation_method:"llm_judge",split:"validation"},
+ {example_id:"rag_000104",domain:"technology",question_type:"single_hop",question:"Which detail is supported by the context for overfitting?",document_id:"doc_0104",document_title:"ML Note — Overfitting",source_license:"CC BY 4.0 (Yogesh Mishra)",ground_truth_answer:"Overfitting is linked to deadline number 4.",required_facts:["linked to deadline 4"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0104",rank:1,retrieval_score:.82,text:"The source says that overfitting is linked to deadline number 4. A required step is also mentioned.",is_relevant:true}],generated_answer:"The key point is that overfitting is linked to deadline number 4. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"Overfitting is linked to deadline number 4.",citation_context_ids:["ctx_001"],is_supported:true,evidence_explanation:"Exact match with context."}],primary_failure_label:"no_failure",secondary_failure_labels:[],error_explanation:"Fully supported.",severity:"low",annotation_method:"llm_judge",split:"test"},
+ {example_id:"rag_000105",domain:"healthcare",question_type:"single_hop",question:"What does the document say about type 2 diabetes?",document_id:"doc_0105",document_title:"Diagnosis Note — Type 2 Diabetes",source_license:"CC BY 4.0 (Yogesh Mishra)",ground_truth_answer:"Type 2 diabetes is linked to warning sign number 4.",required_facts:["linked to warning sign 4"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0105",rank:1,retrieval_score:.85,text:"The document explains that type 2 diabetes is linked to warning sign number 4. A time window is also mentioned.",is_relevant:true}],generated_answer:"Since type 2 diabetes mentions a time window, the model concludes an unrelated extra result that does not follow. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"An unrelated extra result follows from the time window.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Evidence present; inference invalid."}],primary_failure_label:"reasoning_error",secondary_failure_labels:[],error_explanation:"Correct evidence, invalid conclusion.",severity:"medium",annotation_method:"llm_judge",split:"train"},
+ {example_id:"rag_000106",domain:"legal",question_type:"single_hop",question:"What is the correct answer regarding research methods?",document_id:"doc_0106",document_title:"Compliance — Research Methods",source_license:"CC BY 4.0 (Yogesh Mishra)",ground_truth_answer:"Research methods is linked to guideline number 7.",required_facts:["linked to guideline 7"],retrieved_contexts:[{context_id:"ctx_001",document_id:"doc_0106",rank:1,retrieval_score:.8,text:"The passage states that research methods is linked to guideline number 7. A follow-up action is also mentioned.",is_relevant:true}],generated_answer:"The key point is that research methods is linked to guideline number 7, but the supporting reference points elsewhere. [ctx_001]",answer_citations:["ctx_001"],citation_spans:[{claim:"Research methods is linked to guideline number 7.",citation_context_ids:["ctx_001"],is_supported:false,evidence_explanation:"Claim text matches, but the attached reference does not support it in the source audit."}],primary_failure_label:"wrong_citation",secondary_failure_labels:[],error_explanation:"Correct answer, incorrect evidence reference.",severity:"medium",annotation_method:"llm_judge",split:"validation"}
+];
+
+/* Real v1.0 test-run results (from the executed pipeline) */
+const REAL_METRICS = {
+  retrieval:{"Recall@1":.2042,"Recall@5":.6158,"Recall@10":.8367,"Precision@1":.2042,"Precision@5":.1232,"Precision@10":.0837},
+  perClass:{contradiction:{p:.91,r:.97,f1:.94,support:31},hallucination:{p:1,r:1,f1:1,support:34},no_failure:{p:.92,r:.92,f1:.92,support:38},partial_answer:{p:.86,r:.75,f1:.80,support:32},reasoning_error:{p:1,r:1,f1:1,support:22},retrieval_failure:{p:1,r:1,f1:1,support:51},wrong_citation:{p:.94,r:1,f1:.97,support:32}},
+  accuracy:.95, macroF1:.95,
+  cm:[[30,0,0,1,0,0,0],[0,34,0,0,0,0,0],[0,0,35,3,0,0,0],[3,0,3,24,0,0,2],[0,0,0,0,22,0,0],[0,0,0,0,0,51,0],[0,0,0,0,0,0,32]]
+};
+
+/* ================= STATE ================= */
+const S = {
+  records:[], source:"seed", metrics:REAL_METRICS,
+  filters:{q:"",label:"all",domain:"all",severity:"all",split:"all",reviewed:"all"},
+  sort:"id", page:1, perPage:10,
+  selected:new Set(), views:[], reviews:{}, custom:[], deleted:[],
+  drawerId:null, drawerTab:"diff", diffIdx:0, diffTab:"query",
+  undo:null, createMode:false
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const clone = o => (typeof structuredClone==="function"?structuredClone(o):JSON.parse(JSON.stringify(o)));
+const store = {
+  get(k,f){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+};
+function chip(label){ const m=LABELS[label]||{c:"#98a2b3"}; return `<span class="chip" style="--tc:${m.c};color:${m.c};border-color:${m.c}55;background:${m.c}14"><span class="sw" style="background:${m.c}"></span>${esc(label)}</span>`; }
+function sevBadge(s){ const c=SEV[s]||"#98a2b3"; return `<span class="sev" style="color:${c};background:${c}18;border:1px solid ${c}55">${esc(s)}</span>`; }
+
+/* ================= LOAD ================= */
+async function boot(){
+  S.reviews = store.get("rfb_reviews",{});
+  S.views = store.get("rfb_views",[]);
+  S.custom = store.get("rfb_custom",[]);
+  S.deleted = store.get("rfb_deleted",[]);
+  let recs = null;
+  try{
+    const ctl = new AbortController(); const t=setTimeout(()=>ctl.abort(),2500);
+    const r = await fetch("/api/dataset",{signal:ctl.signal}); clearTimeout(t);
+    if(r.ok){ const j = await r.json(); if(Array.isArray(j.records)&&j.records.length){ recs=j.records; S.source="live"; } }
+  }catch(e){/* offline → seeded */}
+  if(!recs) recs = clone(SEED);
+  recs = recs.concat(S.custom.filter(c=>!S.deleted.includes(c.example_id)));
+  recs.forEach(r=>{ const rv=S.reviews[r.example_id]; if(rv){ Object.assign(r,rv); r.reviewed=true; } else r.reviewed=false; });
+  S.records = recs;
+  try{
+    const r = await fetch("/api/metrics"); if(r.ok){ const j=await r.json(); if(j&&j.retrieval) S.metrics=j; }
+  }catch(e){}
+  const badge=$("srcBadge");
+  if(S.source==="live"){ badge.textContent=`live pipeline · ${recs.length.toLocaleString()} records`; badge.classList.remove("seed"); }
+  else { badge.textContent=`seeded preview · ${recs.length} records`; }
+  buildFilters(); renderAll(); initNet(); initObservers();
+}
+
+/* ================= FILTER / SORT ================= */
+function effective(r){ return r; }
+function getFiltered(){
+  const f=S.filters, q=f.q.trim().toLowerCase();
+  let out = S.records.filter(r=>{
+    if(f.label!=="all" && r.primary_failure_label!==f.label) return false;
+    if(f.domain!=="all" && r.domain!==f.domain) return false;
+    if(f.severity!=="all" && r.severity!==f.severity) return false;
+    if(f.split!=="all" && r.split!==f.split) return false;
+    if(f.reviewed==="reviewed" && !r.reviewed) return false;
+    if(f.reviewed==="unreviewed" && r.reviewed) return false;
+    if(q){ const hay=(r.example_id+" "+r.question+" "+r.generated_answer+" "+r.domain+" "+(r.document_title||"")).toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  const cmp={ id:(a,b)=>a.example_id.localeCompare(b.example_id),
+    severity:(a,b)=>SEV_RANK[b.severity]-SEV_RANK[a.severity]||a.example_id.localeCompare(b.example_id),
+    label:(a,b)=>a.primary_failure_label.localeCompare(b.primary_failure_label),
+    domain:(a,b)=>a.domain.localeCompare(b.domain) }[S.sort];
+  return out.sort(cmp);
+}
+
+/* ================= RENDER ================= */
+function renderAll(){ renderStats(); renderTaxonomy(); renderTable(); renderViews(); renderMetrics(); renderSchema(); renderTree(); renderRoadmap(); renderDiff(); }
+
+function renderStats(){
+  const n=S.records.length, docs=new Set(S.records.map(r=>r.document_id)).size, doms=new Set(S.records.map(r=>r.domain)).size;
+  const items=[[7,"Failure Taxonomies"],[n,"Examples"],[doms,"Domains"],[docs,"Source Documents"]];
+  $("statsBar").innerHTML = items.map(([v,l])=>`<div class="stat"><b data-count="${v}">${v}</b><span>${l}</span></div>`).join("")
+   + `<div class="stat"><b class="ok-ic">✓</b><span>JSONL &amp; CSV</span></div><div class="stat"><b class="ok-ic">✓</b><span>Pydantic Validated</span></div>`;
+}
+
+function renderTaxonomy(){
+  const counts={}; LKEYS.forEach(k=>counts[k]=0);
+  S.records.forEach(r=>{ if(counts[r.primary_failure_label]!=null) counts[r.primary_failure_label]++; });
+  const max=Math.max(1,...Object.values(counts));
+  $("taxGrid").innerHTML = LKEYS.map((k,i)=>{ const m=LABELS[k];
+    return `<div class="tax-card rv" style="--tc:${m.c};transition-delay:${i*60}ms" data-label="${k}">
+      <div class="tax-ic">${m.icon}</div><h3>${k.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</h3>
+      <p>${m.def}</p>
+      <div class="tax-count"><div class="tax-bar"><i data-w="${(counts[k]/max*100).toFixed(1)}"></i></div><b>${counts[k]}</b></div>
+      <div class="tax-go">View examples →</div></div>`; }).join("");
+  $("taxGrid").querySelectorAll(".tax-card").forEach(c=>c.addEventListener("click",()=>{
+    S.filters.label=c.dataset.label; $("fLabel").value=c.dataset.label; S.page=1; renderTable();
+    document.getElementById("explorer").scrollIntoView({behavior:"smooth"});
+    toast(`Filtering explorer by ${c.dataset.label}`,"ok");
+  }));
+}
+
+function renderTable(){
+  const list=getFiltered(); const pages=Math.max(1,Math.ceil(list.length/S.perPage));
+  S.page=Math.min(Math.max(1,S.page),pages);
+  const slice=list.slice((S.page-1)*S.perPage,S.page*S.perPage);
+  $("empty").style.display = list.length? "none":"block";
+  $("tbody").innerHTML = slice.map(r=>`<tr data-id="${esc(r.example_id)}" class="${S.selected.has(r.example_id)?"sel-row":""}">
+    <td><input type="checkbox" class="rowcheck" data-id="${esc(r.example_id)}" ${S.selected.has(r.example_id)?"checked":""}></td>
+    <td><span class="qid">${esc(r.example_id)}</span></td>
+    <td><span class="chip" style="--tc:#38bdf8;color:#0369a1;border-color:#38bdf855;background:#38bdf812">${esc(r.domain)}</span></td>
+    <td><div class="qt">${esc(r.question)}</div></td>
+    <td>${chip(r.primary_failure_label)}</td>
+    <td>${sevBadge(r.severity)}</td>
+    <td><span class="mono" style="font-size:.7rem;color:var(--txt-2)">${esc(r.split)}</span></td>
+    <td><span class="rev-dot" style="background:${r.reviewed?"var(--green)":"#cbd5e1"}" title="${r.reviewed?"Reviewed":"Unreviewed"}"></span></td>
+  </tr>`).join("");
+  $("pageInfo").textContent = list.length? `Showing ${(S.page-1)*S.perPage+1}–${Math.min(S.page*S.perPage,list.length)} of ${list.length.toLocaleString()} records` : "0 records";
+  $("pgPrev").disabled = S.page<=1; $("pgNext").disabled = S.page>=pages;
+  $("checkAll").checked = slice.length>0 && slice.every(r=>S.selected.has(r.example_id));
+  renderBulk();
+}
+function renderBulk(){
+  const n=S.selected.size; $("bulkbar").classList.toggle("on",n>0); $("bulkCount").textContent=`${n} selected`;
+}
+function renderViews(){
+  $("viewsRow").innerHTML = S.views.length? `<span style="font-size:.72rem;color:var(--txt-2);font-weight:600">Saved views:</span>`+S.views.map((v,i)=>`<span class="view-chip"><button data-apply="${i}" style="color:#0891b2">${esc(v.name)}</button><button data-del="${i}" title="Delete view">✕</button></span>`).join("") : "";
+  $("viewsRow").querySelectorAll("[data-apply]").forEach(b=>b.onclick=()=>{ const v=S.views[+b.dataset.apply]; S.filters={...v.filters}; S.sort=v.sort; syncFilterUI(); S.page=1; renderTable(); toast(`View “${v.name}” applied`,"ok"); });
+  $("viewsRow").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ S.views.splice(+b.dataset.del,1); store.set("rfb_views",S.views); renderViews(); });
+}
+function syncFilterUI(){ $("q").value=S.filters.q; $("fLabel").value=S.filters.label; $("fDomain").value=S.filters.domain; $("fSeverity").value=S.filters.severity; $("fSplit").value=S.filters.split; $("fReviewed").value=S.filters.reviewed; $("fSort").value=S.sort; }
+
+function buildFilters(){
+  const doms=[...new Set(S.records.map(r=>r.domain))].sort();
+  $("fLabel").innerHTML=`<option value="all">Label: all</option>`+LKEYS.map(k=>`<option value="${k}">${k}</option>`).join("");
+  $("fDomain").innerHTML=`<option value="all">Domain: all</option>`+doms.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("");
+  $("fSeverity").innerHTML=`<option value="all">Severity: all</option>`+Object.keys(SEV).map(s=>`<option value="${s}">${s}</option>`).join("");
+  $("fSplit").innerHTML=`<option value="all">Split: all</option>`+["train","validation","test"].map(s=>`<option value="${s}">${s}</option>`).join("");
+  $("schemaPick").innerHTML=S.records.slice(0,400).map(r=>`<option value="${esc(r.example_id)}">${esc(r.example_id)} · ${esc(r.domain)}</option>`).join("");
+}
+
+/* ---- Failure Diff (hero) ---- */
+function renderDiff(){
+  const list=S.records; if(!list.length) return;
+  S.diffIdx=(S.diffIdx+list.length)%list.length;
+  const r=list[S.diffIdx];
+  const body=$("diffBody");
+  if(S.diffTab==="query") body.innerHTML=`<div class="q">${esc(r.question)}</div><div class="ctx-meta"><span>${esc(r.example_id)}</span>·<span>${esc(r.domain)}</span>·<span>${esc(r.question_type)}</span></div><p style="color:var(--txt-2);font-size:.78rem">Ground truth: ${esc(r.ground_truth_answer)}</p>`;
+  else if(S.diffTab==="context") body.innerHTML=r.retrieved_contexts.map(c=>`<div class="ctx-block" style="border-left-color:${c.is_relevant?"var(--blue)":"var(--rose)"}"><div class="ctx-meta"><span>${esc(c.context_id)}</span><span>rank ${c.rank}</span><span>score ${c.retrieval_score??"—"}</span><span style="color:${c.is_relevant?"#059669":"#e11d48"}">${c.is_relevant?"relevant":"irrelevant"}</span></div>${esc(c.text)}</div>`).join("");
+  else if(S.diffTab==="output") body.innerHTML=`<p style="margin-bottom:10px">${esc(r.generated_answer).replace(/\[(ctx_\d+)\]/g,'<span class="mk">[$1]</span>')}</p>`+(r.citation_spans||[]).map(s=>`<div class="claim ${s.is_supported?"ok":"bad"}">${esc(s.claim)}<span class="why">${s.is_supported?"✓ supported":"✗ unsupported"} — ${esc(s.evidence_explanation||"")}</span></div>`).join("");
+  else body.innerHTML=`<p style="font-size:.8rem;color:var(--txt-2);margin-bottom:10px">${esc(r.error_explanation)}</p><div style="display:flex;gap:8px;flex-wrap:wrap">${chip(r.primary_failure_label)}${(r.secondary_failure_labels||[]).map(chip).join("")}</div><p style="margin-top:12px;font-size:.74rem;color:var(--txt-2)">Annotation: <span class="mono">${esc(r.annotation_method)}</span> · split <span class="mono">${esc(r.split)}</span></p>`;
+  $("diffFoot").innerHTML=`<span class="lbl">Detected Label</span>${chip(r.primary_failure_label)}${(r.secondary_failure_labels||[]).map(chip).join("")}<span style="margin-left:auto">${sevBadge(r.severity)}</span>`;
+  $("diffTabs").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.diffTab));
+}
+
+/* ---- Metrics ---- */
+function renderMetrics(){
+  const m=S.metrics, ret=m.retrieval||REAL_METRICS.retrieval;
+  const cards=[["RECALL@1",ret["Recall@1"]],["RECALL@5",ret["Recall@5"]],["RECALL@10",ret["Recall@10"]]];
+  $("metGrid").innerHTML=cards.map(([k,v])=>`<div class="met-card"><div class="k">${k}</div><div class="v">${(v*100).toFixed(1)}<small>%</small></div><div class="meter"><i data-w="${(v*100).toFixed(1)}"></i></div></div>`).join("")
+   +`<div class="met-card"><div class="k">CLASSIFIER ACCURACY</div><div class="v">${((m.accuracy??REAL_METRICS.accuracy)*100).toFixed(0)}<small>%</small></div><div class="meter"><i data-w="${((m.accuracy??.95)*100).toFixed(0)}"></i></div></div>`
+   +`<div class="met-card"><div class="k">MACRO F1</div><div class="v">${(m.macroF1??REAL_METRICS.macroF1).toFixed(2)}</div><div class="meter"><i data-w="${((m.macroF1??.95)*100).toFixed(0)}"></i></div></div>`
+   +`<div class="met-card"><div class="k">TEST SAMPLES</div><div class="v">240</div><div class="meter"><i data-w="100"></i></div></div>`;
+  /* F1 chart */
+  const pc=m.perClass||REAL_METRICS.perClass;
+  const W=720,H=250,pad=34,bw=(W-pad*2)/7;
+  let svg=`<line x1="${pad}" y1="${H-30}" x2="${W-pad}" y2="${H-30}" stroke="#22304d" stroke-width="1"/>`;
+  [0.25,0.5,0.75,1].forEach(g=>{ const y=H-30-g*(H-70); svg+=`<line x1="${pad}" y1="${y}" x2="${W-pad}" y2="${y}" stroke="#16233f" stroke-width="1"/><text x="${pad-6}" y="${y+3}" fill="#5b6b8c" font-size="9" text-anchor="end" font-family="JetBrains Mono">${g.toFixed(2)}</text>`; });
+  LKEYS.forEach((k,i)=>{ const f=(pc[k]||{}).f1??0; const h=f*(H-70); const x=pad+i*bw+bw*.18; const y=H-30-h; const c=LABELS[k].c;
+    svg+=`<rect x="${x}" y="${y}" width="${bw*.64}" height="${h}" rx="5" fill="${c}" opacity=".9"><title>${k}: F1 ${f.toFixed(2)}</title></rect>
+    <text x="${x+bw*.32}" y="${y-7}" fill="${c}" font-size="11" font-weight="600" text-anchor="middle" font-family="JetBrains Mono">${f.toFixed(2)}</text>
+    <text x="${x+bw*.32}" y="${H-14}" fill="#93a1bd" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">${k.split("_").map(w=>w[0]).join("").toUpperCase()}</text>`; });
+  $("f1chart").innerHTML=svg;
+  /* confusion matrix */
+  const cm=m.cm||REAL_METRICS.cm; const abbr=["CON","HAL","NOF","PAR","REA","RET","WRC"]; const max=Math.max(...cm.flat());
+  let html=`<div class="h"></div>`+abbr.map(a=>`<div class="h">${a}</div>`).join("");
+  cm.forEach((row,i)=>{ html+=`<div class="h" style="justify-content:end;padding-right:6px">${abbr[i]}</div>`;
+    row.forEach((v,j)=>{ const a=v/max; const bg=i===j?`rgba(52,211,153,${.12+a*.75})`:`rgba(244,63,94,${a*.8})`;
+      html+=`<div class="cell" style="background:${v?bg:"rgba(22,35,63,.6)"}" title="true ${LKEYS[i]} → predicted ${LKEYS[j]}: ${v}">${v||"·"}</div>`; }); });
+  $("cm").innerHTML=html;
+  $("cmLegend").innerHTML=LKEYS.map((k,i)=>`<span><i style="background:${LABELS[k].c}"></i>${abbr[i]} = ${k}</span>`).join("");
+}
+
+/* ---- Schema ---- */
+const DICT=[["example_id","str",1,"Unique rag_XXXXXX identifier"],["domain","str",1,"Subject domain (12 covered)"],["question_type","enum",1,"single_hop / multi_hop / comparison / unanswerable"],["question","str",1,"User query, non-empty"],["document_id","str",1,"doc_XXXX — split isolation key"],["document_title","str",1,"Preserved source title"],["source_url","str|null",0,"Original URL when available"],["source_license","str",1,"License / attribution string"],["ground_truth_answer","str",1,"Verified expected answer"],["required_facts","list[str]",1,"Facts a complete answer must contain"],["retrieved_contexts","list[obj]",1,"context_id, rank, score, text, is_relevant"],["generated_answer","str",1,"Model output with inline [ctx_XXX]"],["answer_citations","list[str]",0,"Cited context IDs (must exist)"],["citation_spans","list[obj]",0,"claim → cited IDs → is_supported + why"],["primary_failure_label","enum",1,"Earliest root-cause label"],["secondary_failure_labels","list[enum]",0,"Additional valid issues, no dup of primary"],["error_explanation","str",1,"Human-readable adjudication note"],["severity","enum",1,"low / medium / high / critical"],["annotation_method","enum",1,"human / llm_judge / synthetic_rule / hybrid"],["split","enum",1,"train / validation / test"]];
+function hl(json){ return json.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,m=>{ let cls="num"; if(/^"/.test(m)) cls=/:$/.test(m)?"key":"str"; else if(/true|false/.test(m)) cls="bool"; else if(/null/.test(m)) cls="null"; return `<span class="${cls}">${m}</span>`; }); }
+function renderSchema(){
+  $("dictBody").innerHTML=DICT.map(([f,t,r,d])=>`<tr><td class="fn">${f}</td><td class="ty">${t}</td><td>${r?'<span class="req">REQ</span>':'<span class="opt">OPT</span>'}</td><td style="color:var(--txt-2)">${d}</td></tr>`).join("");
+  const id=$("schemaPick").value||S.records[0]?.example_id;
+  const r=S.records.find(x=>x.example_id===id)||S.records[0];
+  if(r) $("jsonView").innerHTML=hl(JSON.stringify(r,null,2));
+}
+
+/* ---- Structure / roadmap ---- */
+function renderTree(){
+  $("tree").innerHTML=`<span class="dir">rag-failure-bench/</span>
+├── <span class="dir">app/</span>
+│   ├── <span class="file">web/index.html</span>      <span class="cm2"># this landing + explorer</span>
+│   ├── <span class="file">server.py</span>           <span class="cm2"># stdlib API + static host</span>
+│   └── <span class="file">streamlit_app.py</span>    <span class="cm2"># optional dashboard</span>
+├── <span class="dir">src/</span>
+│   ├── <span class="file">schemas.py</span>          <span class="cm2"># Pydantic contract</span>
+│   ├── <span class="file">validation.py</span>       <span class="cm2"># audits + leakage checks</span>
+│   ├── <span class="file">ingest.py</span>           <span class="cm2"># Kaggle download</span>
+│   ├── <span class="file">normalize.py</span>        <span class="cm2"># CSV → strict JSONL</span>
+│   ├── <span class="file">embeddings.py</span>       <span class="cm2"># local model loader</span>
+│   ├── <span class="file">retrieval.py</span>        <span class="cm2"># FAISS save/load/search</span>
+│   ├── <span class="file">generation.py</span>       <span class="cm2"># Ollama llama3.2:3b</span>
+│   ├── <span class="file">citation_utils.py</span>   <span class="cm2"># extraction + support check</span>
+│   ├── <span class="file">classification.py</span>   <span class="cm2"># TF-IDF + LogReg</span>
+│   └── <span class="file">metrics.py</span>          <span class="cm2"># Recall/Precision@k</span>
+├── <span class="dir">scripts/</span>
+│   └── <span class="file">build_faiss_index_colab.py</span>
+├── <span class="dir">artifacts/</span>             <span class="cm2"># model + index.faiss + id_map</span>
+├── <span class="dir">data/</span> <span class="dir">outputs/</span> <span class="dir">configs/</span> <span class="dir">tests/</span>
+└── <span class="file">requirements.txt</span>`;
+  $("pipe").innerHTML=[["Ingest","Kaggle CSV"],["Normalize","8→7 labels"],["Embed","Colab GPU"],["FAISS","cosine top-k"],["Generate","Ollama + cites"],["Classify","macro-F1 .95"]].map(([b,s])=>`<div class="pipe-step"><b>${b}</b><span>${s}</span></div>`).join("");
+}
+function renderRoadmap(){
+  const steps=[["MVP Scope","300 → 1,200",2],["Data Collection","normalized",2],["Failure Pipeline","injection + gen",2],["Evaluation Metrics","retrieval + clf",2],["Kaggle Readiness","card + upload",1]];
+  $("steps").innerHTML=`<div class="prog" id="roadProg"></div>`+steps.map(([b,s,st])=>`<div class="step ${st===2?"done":"active"}"><div class="nd">✓</div><div><b>${b}</b><span>${s}</span></div></div>`).join("");
+}
+
+/* ================= DRAWER ================= */
+function openDrawer(id,tab){
+  S.drawerId=id; S.drawerTab=tab||"diff"; S.createMode=false;
+  $("scrim").classList.add("on"); $("drawer").classList.add("on"); renderDrawer();
+}
+function closeDrawer(){ $("scrim").classList.remove("on"); $("drawer").classList.remove("on"); S.drawerId=null; S.createMode=false; }
+function renderDrawer(){
+  if(S.createMode){ renderCreate(); return; }
+  const r=S.records.find(x=>x.example_id===S.drawerId); if(!r){closeDrawer();return;}
+  $("drId").textContent=r.example_id;
+  $("drDomain").innerHTML=`<span class="sw" style="background:#38bdf8"></span>${esc(r.domain)}`;
+  $("drTabs").style.display="flex";
+  $("drTabs").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.drawerTab));
+  const body=$("drBody");
+  if(S.drawerTab==="diff"){
+    body.innerHTML=`<div class="field"><label>Question</label><div style="font-weight:600">${esc(r.question)}</div></div>
+    <div class="field"><label>Retrieved contexts</label>${r.retrieved_contexts.map(c=>`<div class="ctx-block" style="border-left-color:${c.is_relevant?"var(--blue)":"var(--rose)"}"><div class="ctx-meta"><span>${esc(c.context_id)}</span><span>rank ${c.rank}</span><span style="color:${c.is_relevant?"#059669":"#e11d48"}">${c.is_relevant?"relevant":"irrelevant"}</span></div>${esc(c.text)}</div>`).join("")}</div>
+    <div class="field"><label>LLM output</label><p style="font-size:.86rem">${esc(r.generated_answer).replace(/\[(ctx_\d+)\]/g,'<span class="mk">[$1]</span>')}</p></div>
+    <div class="field"><label>Ground truth</label><p style="font-size:.84rem;color:var(--txt-2)">${esc(r.ground_truth_answer)}</p></div>
+    <div class="field"><label>Adjudication</label><p style="font-size:.84rem;color:var(--txt-2)">${esc(r.error_explanation)}</p></div>`;
+  } else if(S.drawerTab==="audit"){
+    body.innerHTML=(r.citation_spans||[]).length? (r.citation_spans.map(s=>`<div class="claim ${s.is_supported?"ok":"bad"}"><b style="font-size:.82rem">${esc(s.claim)}</b><div class="ctx-meta" style="margin:6px 0">${(s.citation_context_ids||[]).map(c=>`<span class="mk">${esc(c)}</span>`).join("")||"<span>no citation</span>"}</div><span class="why">${s.is_supported?"✓ supported":"✗ unsupported"} — ${esc(s.evidence_explanation||"")}</span></div>`).join("")) : `<div class="empty"><b>No citation spans</b>This record carries no claim-level audit.</div>`;
+  } else if(S.drawerTab==="json"){
+    body.innerHTML=`<pre class="json">${hl(JSON.stringify(r,null,2))}</pre>`;
+  } else {
+    body.innerHTML=`
+    <div class="field"><label>Primary failure label</label><select id="anPrimary">${LKEYS.map(k=>`<option value="${k}" ${k===r.primary_failure_label?"selected":""}>${k}</option>`).join("")}</select></div>
+    <div class="field"><label>Secondary labels (root-cause rule: never repeat primary)</label><div class="sec-chips" id="anSec">${LKEYS.map(k=>`<button class="sec-chip ${(r.secondary_failure_labels||[]).includes(k)?"on":""}" data-k="${k}" style="--tc:${LABELS[k].c}">${k}</button>`).join("")}</div></div>
+    <div class="field"><label>Severity</label><select id="anSev">${Object.keys(SEV).map(s=>`<option ${s===r.severity?"selected":""}>${s}</option>`).join("")}</select></div>
+    <div class="field"><label>Reviewer note</label><textarea id="anNote" placeholder="Why this label? What evidence decides it?">${esc(r.review_note||"")}</textarea></div>
+    <div class="field"><label>Required facts</label><div style="display:flex;gap:6px;flex-wrap:wrap">${(r.required_facts||[]).map(f=>`<span class="chip" style="--tc:#a78bfa;color:#7c3aed;border-color:#a78bfa55;background:#a78bfa12">${esc(f)}</span>`).join("")}</div></div>`;
+    $("anSec").querySelectorAll(".sec-chip").forEach(b=>b.onclick=()=>{ const k=b.dataset.k; if(k===$("anPrimary").value){toast("Primary label cannot also be secondary","warn");return;} b.classList.toggle("on"); });
+  }
+  $("drFoot").innerHTML = S.drawerTab==="annotate"
+   ? `<button class="btn btn-primary btn-sm" id="anSave">Save annotation</button><button class="btn btn-outline btn-sm" id="anReview">${r.reviewed?"✓ Reviewed":"Mark reviewed"}</button>${r.annotation_method==="human"&&S.custom.some(c=>c.example_id===r.example_id)?`<button class="btn btn-ghost btn-sm" id="anDelete" style="color:var(--rose);border-color:var(--rose)">Delete</button>`:""}<span style="margin-left:auto;font-size:.7rem;color:var(--txt-2)">changes are local + undoable</span>`
+   : `<button class="btn btn-light btn-sm" id="drAnnotate">Annotate this record</button><span style="margin-left:auto">${sevBadge(r.severity)}</span>`;
+  const sv=$("anSave"); if(sv) sv.onclick=()=>saveAnnotation(r);
+  const rv=$("anReview"); if(rv) rv.onclick=()=>{ r.reviewed=!r.reviewed; persistReview(r); renderDrawer(); renderTable(); toast(r.reviewed?"Marked reviewed":"Review flag cleared","ok"); };
+  const dl=$("anDelete"); if(dl) dl.onclick=()=>deleteCustom(r);
+  const da=$("drAnnotate"); if(da) da.onclick=()=>{S.drawerTab="annotate";renderDrawer();};
+}
+function persistReview(r){
+  S.reviews[r.example_id]={primary_failure_label:r.primary_failure_label,secondary_failure_labels:r.secondary_failure_labels,severity:r.severity,review_note:r.review_note||"",reviewed:r.reviewed};
+  store.set("rfb_reviews",S.reviews);
+}
+function saveAnnotation(r){
+  const before=clone({p:r.primary_failure_label,s:r.secondary_failure_labels,sev:r.severity,note:r.review_note,rev:r.reviewed});
+  const prim=$("anPrimary").value;
+  const sec=[...$("anSec").querySelectorAll(".sec-chip.on")].map(b=>b.dataset.k).filter(k=>k!==prim);
+  r.primary_failure_label=prim; r.secondary_failure_labels=sec; r.severity=$("anSev").value; r.review_note=$("anNote").value; r.reviewed=true; r.annotation_method="human";
+  persistReview(r);
+  S.undo={ids:[r.example_id],before:[before]};
+  renderTable(); renderTaxonomy(); renderDrawer();
+  toast(`Annotation saved for ${r.example_id}`,"ok",{label:"Undo",fn:undoLast});
+}
+function undoLast(){
+  if(!S.undo) return;
+  S.undo.ids.forEach((id,i)=>{
+    const r=S.records.find(x=>x.example_id===id);
+    const before=S.undo.before[i];
+    if(!r||!before) return;
+    r.primary_failure_label=before.p;
+    r.secondary_failure_labels=before.s;
+    r.severity=before.sev;
+    r.review_note=before.note;
+    r.reviewed=before.rev;
+    persistReview(r);
+  });
+  S.undo=null;
+  renderAll();
+  toast("Last annotation undone","ok");
+}
+function renderCreate(){
+  $("drId").textContent="New example";
+  $("drDomain").innerHTML="custom";
+  $("drTabs").style.display="none";
+  $("drBody").innerHTML=`<div class="field"><label>Question</label><textarea id="newQuestion" placeholder="Enter a benchmark question"></textarea></div>
+    <div class="field"><label>Domain</label><input id="newDomain" value="technology"></div>
+    <div class="field"><label>Generated answer</label><textarea id="newAnswer"></textarea></div>
+    <div class="field"><label>Primary failure label</label><select id="newLabel">${LKEYS.map(k=>`<option value="${k}">${k}</option>`).join("")}</select></div>
+    <div class="field"><label>Severity</label><select id="newSeverity">${Object.keys(SEV).map(k=>`<option value="${k}">${k}</option>`).join("")}</select></div>`;
+  $("drFoot").innerHTML=`<button class="btn btn-primary btn-sm" id="createSave">Create example</button><button class="btn btn-outline btn-sm" id="createCancel">Cancel</button>`;
+  $("createCancel").onclick=closeDrawer;
+  $("createSave").onclick=()=>{
+    const id=`rag_custom_${Date.now()}`;
+    const r={example_id:id,domain:$("newDomain").value.trim()||"other",question_type:"single_hop",
+      question:$("newQuestion").value.trim(),document_id:`doc_custom_${Date.now()}`,document_title:"User-created example",
+      source_license:"local",ground_truth_answer:"",required_facts:[],retrieved_contexts:[],
+      generated_answer:$("newAnswer").value.trim(),answer_citations:[],citation_spans:[],
+      primary_failure_label:$("newLabel").value,secondary_failure_labels:[],error_explanation:"Created locally.",
+      severity:$("newSeverity").value,annotation_method:"human",split:"train",reviewed:false};
+    if(!r.question){toast("Question is required","warn");return;}
+    S.custom.push(r); S.records.push(r); store.set("rfb_custom",S.custom);
+    closeDrawer(); buildFilters(); syncFilterUI(); renderAll(); toast("Example created","ok");
+  };
+}
+function deleteCustom(r){
+  if(!S.custom.some(x=>x.example_id===r.example_id)) return;
+  S.deleted.push(r.example_id); S.custom=S.custom.filter(x=>x.example_id!==r.example_id);
+  S.records=S.records.filter(x=>x.example_id!==r.example_id);
+  store.set("rfb_custom",S.custom); store.set("rfb_deleted",S.deleted);
+  closeDrawer(); buildFilters(); syncFilterUI(); renderAll(); toast("Example deleted","ok");
+}
+function toast(message,type="info",action){
+  const el=document.createElement("div");
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${esc(message)}</span>${action?`<button>${esc(action.label)}</button>`:""}`;
+  if(action) el.querySelector("button").onclick=()=>{action.fn();el.remove();};
+  $("toasts").appendChild(el);
+  setTimeout(()=>el.remove(),4500);
+}
+function initNet(){
+  const canvas=$("net"), ctx=canvas.getContext("2d");
+  const resize=()=>{canvas.width=canvas.clientWidth*devicePixelRatio;canvas.height=canvas.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);};
+  resize(); window.addEventListener("resize",resize,{passive:true});
+  const dots=Array.from({length:18},()=>({x:Math.random()*canvas.clientWidth,y:Math.random()*canvas.clientHeight,vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12}));
+  const draw=()=>{
+    const w=canvas.clientWidth,h=canvas.clientHeight; ctx.clearRect(0,0,w,h);
+    dots.forEach(a=>{a.x=(a.x+a.vx+w)%w;a.y=(a.y+a.vy+h)%h;});
+    dots.forEach((a,i)=>dots.slice(i+1).forEach(b=>{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<130){ctx.strokeStyle=`rgba(56,189,248,${(1-d/130)*.12})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}));
+    dots.forEach(a=>{ctx.fillStyle="rgba(34,211,238,.35)";ctx.beginPath();ctx.arc(a.x,a.y,1.2,0,Math.PI*2);ctx.fill();});
+    if(!matchMedia("(prefers-reduced-motion: reduce)").matches) requestAnimationFrame(draw);
+  };
+  draw();
+}
+function initObservers(){
+  const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add("in");}),{threshold:.08});
+  document.querySelectorAll(".rv").forEach(el=>observer.observe(el));
+  document.querySelectorAll("[data-w]").forEach(el=>{el.style.width=`${el.dataset.w}%`;});
+}
+function wire(){
+  $("burger").onclick=()=>$("navLinks").classList.toggle("open");
+  $("ddBtn").onclick=()=>$("dd").classList.toggle("open");
+  $("ghBtn").onclick=()=>window.open("https://github.com","_blank","noopener");
+  document.querySelectorAll("#diffTabs button").forEach(b=>b.onclick=()=>{S.diffTab=b.dataset.t;renderDiff();});
+  $("diffPrev").onclick=()=>{S.diffIdx--;renderDiff();};
+  $("diffNext").onclick=()=>{S.diffIdx++;renderDiff();};
+  $("diffRand").onclick=()=>{S.diffIdx=Math.floor(Math.random()*S.records.length);renderDiff();};
+  ["q","fLabel","fDomain","fSeverity","fSplit","fReviewed"].forEach(id=>$(id).addEventListener("input",()=>{
+    S.filters.q=$("q").value; ["label","domain","severity","split","reviewed"].forEach(k=>S.filters[k]=$(k==="label"?"fLabel":k==="domain"?"fDomain":k==="severity"?"fSeverity":k==="split"?"fSplit":"fReviewed").value);
+    S.page=1;renderTable();
+  }));
+  $("fSort").onchange=()=>{S.sort=$("fSort").value;S.page=1;renderTable();};
+  $("pgPrev").onclick=()=>{S.page--;renderTable();}; $("pgNext").onclick=()=>{S.page++;renderTable();};
+  $("tbody").onclick=e=>{const row=e.target.closest("tr");if(row&&!e.target.classList.contains("rowcheck"))openDrawer(row.dataset.id);};
+  $("schemaPick").onchange=renderSchema;
+  $("drClose").onclick=closeDrawer; $("scrim").onclick=closeDrawer;
+  document.querySelectorAll("#drTabs button").forEach(b=>b.onclick=()=>{S.drawerTab=b.dataset.t;renderDrawer();});
+  $("drPrev").onclick=()=>{const i=S.records.findIndex(r=>r.example_id===S.drawerId);openDrawer(S.records[(i-1+S.records.length)%S.records.length].example_id,S.drawerTab);};
+  $("drNext").onclick=()=>{const i=S.records.findIndex(r=>r.example_id===S.drawerId);openDrawer(S.records[(i+1)%S.records.length].example_id,S.drawerTab);};
+  $("newRec").onclick=()=>{S.createMode=true;$("scrim").classList.add("on");$("drawer").classList.add("on");renderDrawer();};
+  $("checkAll").onchange=e=>{document.querySelectorAll(".rowcheck").forEach(c=>{c.checked=e.target.checked;if(c.checked)S.selected.add(c.dataset.id);else S.selected.delete(c.dataset.id);});renderTable();};
+  document.addEventListener("change",e=>{if(e.target.classList.contains("rowcheck")){e.target.checked?S.selected.add(e.target.dataset.id):S.selected.delete(e.target.dataset.id);renderBulk();}});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer();if(e.key==="/"&&document.activeElement.tagName!=="INPUT"){e.preventDefault();$("q").focus();}});
+}
+wire();
+boot();
+</script>
+</body>
+</html>

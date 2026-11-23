@@ -1,0 +1,62 @@
+project:
+  name: RAG-FailureBench
+  version: 0.1.0
+  seed: 42
+
+paths:
+  data_raw: data/raw
+  data_interim: data/interim
+  data_processed: data/processed
+  data_train: data/train
+  data_validation: data/validation
+  data_test: data/test
+  outputs_charts: outputs/charts
+  outputs_reports: outputs/reports
+  outputs_predictions: outputs/predictions
+
+dataset:
+  target_examples_mvp: 300
+  target_examples_full: 1200
+  kaggle_ref:
+    slug: yogeshm01/rag-error-analysis-dataset-for-llm-evaluation
+    file: rag_failure_cases.csv
+    license: CC BY 4.0
+    author: Yogesh Mishra
+
+labels:
+  canonical:
+    - hallucination
+    - retrieval_failure
+    - contradiction
+    - wrong_citation
+    - reasoning_error
+    - partial_answer
+    - no_failure
+  # Kaggle failure_type -> canonical primary label
+  source_to_canonical:
+    Hallucination: hallucination
+    Missing Context: retrieval_failure
+    Partial Answer: partial_answer
+    Retrieval Failure: retrieval_failure
+    Wrong Citation: wrong_citation
+    Contradiction: contradiction
+    Reasoning Error: reasoning_error
+    No Failure: no_failure
+
+retrieval:      # placeholders, wired in M3
+  embedding_model: all-MiniLM-L6-v2
+  index_type: faiss
+  top_k: 5
+
+generation:     # placeholders, wired in M4
+  provider: ollama
+  model: llama3.1:8b
+  base_url: http://localhost:11434
+
+logging:
+  level: INFO
+artifacts:
+  dir: artifacts
+  model_path: artifacts/model
+  faiss_index_path: artifacts/index.faiss
+  id_map_path: artifacts/id_map.json

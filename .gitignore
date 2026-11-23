@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Large / raw data (keep only the committed sample file)
+data/raw/*
+data/interim/*
+data/train/*
+data/validation/*
+data/test/*
+!data/processed/sample_rag_failurebench.jsonl
+outputs/**/*
+!outputs/.gitkeep
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/train/.gitkeep
+!data/validation/.gitkeep
+!data/test/.gitkeep
+# Pre-built artifacts (Model weights, FAISS index, ID maps)
+artifacts/*.faiss
+artifacts/*.bin
+artifacts/model/
+artifacts/id_map.json
+!artifacts/.gitkeep
