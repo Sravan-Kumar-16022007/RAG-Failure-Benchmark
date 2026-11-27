@@ -173,7 +173,6 @@ table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:860px}
 thead th{position:sticky;top:0;background:var(--paper);text-align:left;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-2);padding:11px 14px;border-bottom:1px solid var(--line);z-index:2}
 tbody td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
 tbody tr{cursor:pointer;transition:background .15s}
-tbody tr:hover{background:rgba(34,211,238,.05)}
 tbody tr.sel-row{background:rgba(34,211,238,.09)}
 td .qid{font-family:var(--font-m);font-size:.72rem;color:#0891b2;font-weight:600}
 td .qt{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt)}
@@ -214,8 +213,11 @@ pre.json .key{color:var(--cyan)} pre.json .str{color:var(--green)} pre.json .num
 .met-card .v small{font-size:1rem;color:var(--cyan)}
 .meter{height:6px;border-radius:4px;background:var(--ink4);overflow:hidden}
 .meter i{display:block;height:100%;border-radius:4px;background:var(--grad);width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
-.chart-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
-.panel{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:22px}
+.chart-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
+.structure-side{display:flex;flex-direction:column;gap:20px;min-width:0}
+.structure-side .pipe{margin-top:0}
+.structure-side .road{margin-top:0}
+.panel{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:22px;min-width:0}
 .panel h3{font-size:.95rem;margin-bottom:4px}
 .panel .hint{font-size:.74rem;color:var(--txt-d2);margin-bottom:16px}
 .cm{display:grid;grid-template-columns:auto repeat(7,1fr);gap:3px;font-family:var(--font-m);font-size:.66rem}
@@ -226,7 +228,8 @@ pre.json .key{color:var(--cyan)} pre.json .str{color:var(--green)} pre.json .num
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:8px;height:8px;border-radius:2px}
 /* schema */
-.schema-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.schema-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.schema-grid>*{min-width:0}
 .dict{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:sticky;top:calc(var(--nav-h) + 16px)}
 .dict table{min-width:0}
 .dict td{font-size:.76rem}
@@ -235,7 +238,7 @@ pre.json .key{color:var(--cyan)} pre.json .str{color:var(--green)} pre.json .num
 .req{font-size:.62rem;font-weight:700;color:var(--rose);border:1px solid rgba(244,63,94,.4);border-radius:5px;padding:1px 6px}
 .opt{font-size:.62rem;font-weight:700;color:var(--txt-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
 /* structure */
-.tree{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:22px;font-family:var(--font-m);font-size:.76rem;line-height:2.05;color:var(--txt-d2);overflow:auto}
+.tree{background:var(--ink3);border:1px solid var(--line-d);border-radius:var(--r);padding:22px;font-family:var(--font-m);font-size:.76rem;line-height:2.05;color:var(--txt-d2);overflow:auto;white-space:pre-wrap}
 .tree .dir{color:var(--cyan);font-weight:600}
 .tree .cm2{color:#5b6b8c}
 .tree .file{color:var(--txt-d)}
@@ -267,7 +270,9 @@ pre.json .key{color:var(--cyan)} pre.json .str{color:var(--green)} pre.json .num
 .res-card p{font-size:.8rem;color:var(--txt-2);flex:1}
 /* footer */
 footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
-.foot-in{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.foot-in{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.foot-person{display:flex;flex-direction:column;gap:5px;min-width:180px}
+.foot-person .gh-btn{width:max-content;font-size:.68rem;padding:5px 10px}
 .foot-in b{color:var(--txt-d);display:block;font-size:.82rem}
 /* modal */
 .modal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -286,18 +291,43 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
 .toast.ok{border-left-color:var(--green)}
 .toast button{background:rgba(34,211,238,.15);border:none;color:var(--cyan);font-weight:600;font-size:.76rem;padding:6px 12px;border-radius:8px}
 @keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+/* playground */
+.pg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.pg-form{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+.pg-form label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-2);margin:14px 0 6px}
+.pg-form label:first-child{margin-top:0}
+.pg-form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.86rem;min-height:84px;resize:vertical;outline:none;background:var(--paper);font-family:var(--font-b)}
+.pg-form textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+.pg-sat{display:flex;align-items:center;gap:12px}
+.pg-sat input[type=range]{flex:1;accent-color:#0891b2}
+.pg-sat b{font-family:var(--font-m);min-width:44px;text-align:right}
+.pg-result{background:var(--ink2);color:var(--txt-d);border:1px solid var(--line-d);border-radius:14px;padding:22px;min-height:340px;min-width:0}
+.pg-verdict{display:flex;align-items:center;gap:12px;font-family:var(--font-d);font-size:1.15rem;font-weight:700;margin-bottom:6px}
+.pg-verdict .vdot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 14px currentColor}
+.pg-conf{font-family:var(--font-m);font-size:.78rem;color:var(--txt-d2);margin-bottom:16px}
+.pg-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pg-bar .n{width:130px;font-family:var(--font-m);font-size:.68rem;color:var(--txt-d2);text-align:right;flex:none}
+.pg-bar .t{flex:1;height:12px;background:var(--ink4);border-radius:6px;overflow:hidden}
+.pg-bar .f{display:block;height:100%;border-radius:6px;width:0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.pg-bar .v{width:52px;font-family:var(--font-m);font-size:.68rem;flex:none}
+.pg-note{margin-top:14px;font-size:.78rem;color:var(--amber);border-left:3px solid var(--amber);padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px}
+.pg-history{margin-top:16px;display:flex;flex-direction:column;gap:6px}
+.pg-history button{display:flex;gap:8px;align-items:center;background:var(--ink3);border:1px solid var(--line-d);border-radius:8px;padding:7px 10px;color:var(--txt-d2);font-size:.72rem;text-align:left;width:100%}
+.pg-history button:hover{border-color:var(--cyan);color:var(--txt-d)}
+.pg-history .hq{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:1020px){.pg-grid{grid-template-columns:minmax(0,1fr)}}
 /* reveal */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
 .rv.in{opacity:1;transform:none}
 .src-badge{font-family:var(--font-m);font-size:.66rem;padding:4px 10px;border-radius:999px;border:1px solid rgba(52,211,153,.5);color:var(--green);background:rgba(52,211,153,.08)}
 .src-badge.seed{border-color:rgba(245,158,11,.5);color:var(--amber);background:rgba(245,158,11,.08)}
 @media (max-width:1020px){
-  .hero-in{grid-template-columns:1fr}
-  .tax-grid{grid-template-columns:repeat(2,1fr)}
-  .chart-grid,.schema-grid{grid-template-columns:1fr}
+  .hero-in{grid-template-columns:minmax(0,1fr)}
+  .tax-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chart-grid,.schema-grid{grid-template-columns:minmax(0,1fr)}
   .dict{position:static}
-  .met-grid{grid-template-columns:repeat(3,1fr)}
-  .res-grid{grid-template-columns:1fr 1fr}
+  .met-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .res-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:760px){
   .nav-links{position:fixed;top:var(--nav-h);left:0;right:0;background:var(--ink2);flex-direction:column;padding:14px;border-bottom:1px solid var(--line-d);display:none}
@@ -306,7 +336,7 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
   .gh-btn{display:none}
   .dd-menu{position:static;opacity:1;transform:none;pointer-events:auto;display:none;box-shadow:none}
   .dd.open .dd-menu{display:block}
-  .tax-grid,.met-grid,.res-grid{grid-template-columns:1fr}
+  .tax-grid,.met-grid,.res-grid{grid-template-columns:minmax(0,1fr)}
   .stat{border-right:none;padding:6px 14px}
   .steps{flex-direction:column;gap:18px}
   .steps::before,.steps .prog{display:none}
@@ -369,7 +399,7 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
   .stat span{font-size:5px}
   .sec{padding:12px 0}
   #taxonomy .sec-head{display:none}
-  .tax-grid{grid-template-columns:repeat(5,1fr);gap:4px}
+  .tax-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
   .tax-card{padding:6px;border-radius:4px}
   .tax-card::before{height:1px}
   .tax-ic{width:18px;height:18px;border-radius:4px;margin-bottom:4px;font-size:10px}
@@ -384,6 +414,13 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
   html{scroll-behavior:auto}
 }
+/* solutions per benchmark */
+.sol-head{margin:46px 0 18px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sol-head h3{font-family:var(--font-d);font-size:1.15rem}
+.sol-head span{font-size:.78rem;color:var(--txt-2)}
+.sol-stage{position:absolute;top:14px;right:14px;font-family:var(--font-m);font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tc);background:color-mix(in srgb,var(--tc) 10%,white);border:1px solid color-mix(in srgb,var(--tc) 35%,white);padding:2px 8px;border-radius:999px}
+.sol-boost{margin-top:10px;font-size:.7rem;color:var(--txt-2);border-top:1px dashed var(--line);padding-top:8px}
+.sol-boost b{color:var(--tc)}
 </style>
 </head>
 <body>
@@ -398,6 +435,8 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
     <div class="nav-links" id="navLinks">
       <a href="#overview" data-sec="overview" class="active">Overview</a>
       <a href="#taxonomy" data-sec="taxonomy">Failure Taxonomy</a>
+      <a href="#use-cases" data-sec="use-cases">Daily Life Uses</a>
+      <a href="#playground" data-sec="playground">Live Playground</a>
       <a href="#schema" data-sec="schema">Dataset Schema</a>
       <a href="#structure" data-sec="structure">Project Structure</a>
       <div class="dd" id="dd">
@@ -466,11 +505,97 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
   </div>
 </section>
 
+<!-- ============ DAILY LIFE USES ============ -->
+<section class="sec" id="use-cases">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">02 · DAILY LIFE USES</div>
+      <h2>Why reliable AI matters in everyday decisions</h2>
+      <p class="sub">RAG-FailureBench helps people notice when an AI answer may be unsupported, incomplete, or based on the wrong source before they rely on it.</p>
+    </div>
+    <div class="res-grid">
+      <div class="res-card rv">
+        <h3>📚 Learning &amp; homework</h3>
+        <p>Students can check whether an explanation is grounded in the supplied lesson material instead of accepting a confident but invented answer.</p>
+      </div>
+      <div class="res-card rv">
+        <h3>🔎 Everyday research</h3>
+        <p>Compare an answer with its retrieved sources and quickly spot missing evidence, contradictions, or citations that do not support the claim.</p>
+      </div>
+      <div class="res-card rv">
+        <h3>💼 Work &amp; productivity</h3>
+        <p>Teams can audit summaries, reports, and knowledge-base answers before using them in emails, planning, or customer-facing work.</p>
+      </div>
+      <div class="res-card rv">
+        <h3>🛒 Smarter choices</h3>
+        <p>When comparing products, services, or travel options, the benchmark highlights incomplete answers and reasoning errors that can distort a decision.</p>
+      </div>
+      <div class="res-card rv">
+        <h3>🧭 Safer information use</h3>
+        <p>People can distinguish supported information from speculation. For medical, legal, or financial decisions, always confirm important advice with a qualified professional.</p>
+      </div>
+      <div class="res-card rv">
+        <h3>🤝 Better AI literacy</h3>
+        <p>Teachers, families, and developers can use the seven failure modes as a simple vocabulary for asking: “What source supports this answer?”</p>
+      </div>
+    </div>
+
+    <div class="sol-head rv">
+      <h3>From failure to fix — solutions per benchmark</h3>
+      <span>Every failure mode we detect maps to a concrete mitigation we can build next to harden any RAG system.</span>
+    </div>
+    <div class="tax-grid">
+      <div class="tax-card rv" style="--tc:#f43f5e">
+        <span class="sol-stage">Verification</span>
+        <div class="tax-ic">🛡️</div><h3>Hallucination → Claim-level NLI gate</h3>
+        <p>Score every answer claim against the retrieved context with an entailment model (DeBERTa-v3-NLI / AlignScore). Below threshold, block the claim or fall back to a refusal instead of guessing.</p>
+        <div class="sol-boost">Boosts: <b>faithfulness</b> · runs post-generation</div>
+      </div>
+      <div class="tax-card rv" style="--tc:#38bdf8">
+        <span class="sol-stage">Retrieval</span>
+        <div class="tax-ic">🔀</div><h3>Retrieval Failure → Hybrid search + reranker + abstain</h3>
+        <p>Fuse BM25 with dense embeddings (RRF), rerank with a cross-encoder, and add a score threshold: below it the system says "I don't know" or rewrites the query (HyDE) instead of answering blind.</p>
+        <div class="sol-boost">Boosts: <b>Recall@k / context precision</b> · replaces top-k-only search</div>
+      </div>
+      <div class="tax-card rv" style="--tc:#f59e0b">
+        <span class="sol-stage">Generation</span>
+        <div class="tax-ic">⚖️</div><h3>Contradiction → Self-consistency + conflict detector</h3>
+        <p>Sample several answers, majority-vote the factual claims, and run an NLI contradiction check of answer-vs-context. On conflict, regenerate with the disputed sentence highlighted as constrained.</p>
+        <div class="sol-boost">Boosts: <b>answer correctness</b> · catches negated facts</div>
+      </div>
+      <div class="tax-card rv" style="--tc:#e879f9">
+        <span class="sol-stage">Verification</span>
+        <div class="tax-ic">🧾</div><h3>Wrong Citation → Cite-then-verify attribution layer</h3>
+        <p>After generation, re-score each [ctx] marker for entailment of its attached claim. Unsupported citations are auto-removed or re-linked, and a citation-correctness score is reported with the answer.</p>
+        <div class="sol-boost">Boosts: <b>citation correctness</b> · makes references trustworthy</div>
+      </div>
+      <div class="tax-card rv" style="--tc:#a78bfa">
+        <span class="sol-stage">Generation</span>
+        <div class="tax-ic">🧮</div><h3>Reasoning Error → Tool-augmented reasoning</h3>
+        <p>Route arithmetic, comparisons and multi-hop steps to a code interpreter / calculator (program-of-thoughts) and re-verify every computed number before the final answer is emitted.</p>
+        <div class="sol-boost">Boosts: <b>math &amp; comparison accuracy</b> · removes silent miscalculation</div>
+      </div>
+      <div class="tax-card rv" style="--tc:#fb923c">
+        <span class="sol-stage">Verification</span>
+        <div class="tax-ic">📋</div><h3>Partial Answer → Fact-coverage loop</h3>
+        <p>Decompose the question into required facts, check the draft answer against each item, and iteratively regenerate only the missing parts until coverage reaches 100% or the budget ends.</p>
+        <div class="sol-boost">Boosts: <b>answer completeness</b> · uses the required_facts field</div>
+      </div>
+      <div class="tax-card rv" style="--tc:#34d399">
+        <span class="sol-stage">Monitoring</span>
+        <div class="tax-ic">🔁</div><h3>No Failure → Golden regression guardrail</h3>
+        <p>Keep every passing example as a control suite and re-run it in CI on every pipeline change, watching confidence distributions so silent drift is caught before users are.</p>
+        <div class="sol-boost">Boosts: <b>release safety</b> · turns good answers into tests</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ EXPLORER ============ -->
 <section class="sec" id="explorer" style="padding-top:20px">
   <div class="wrap">
     <div class="sec-head rv">
-      <div class="kicker">02 · DATASET EXPLORER</div>
+      <div class="kicker">03 · DATASET EXPLORER</div>
       <h2>Search, audit &amp; annotate every record</h2>
       <p class="sub">Live search, filters, saved views, bulk export and a review drawer with undo. Annotations persist locally in your browser.</p>
     </div>
@@ -531,11 +656,44 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
   </div>
 </section>
 
+<!-- ============ LIVE PLAYGROUND ============ -->
+<section class="sec" id="playground" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kicker">LIVE · FAILURE CLASSIFIER</div>
+      <h2>Test any query &amp; LLM answer in real time</h2>
+      <p class="sub">Paste a question and the answer any LLM gave you. The trained TF-IDF + Logistic Regression classifier (macro-F1 0.95) decides instantly: completely successful, or one of the six failure modes — with per-class confidence percentages. No generation, pure diagnosis.</p>
+    </div>
+    <div class="pg-grid">
+      <div class="pg-form rv">
+        <label for="pgSample">0 · Load a built-in test sample</label>
+        <select id="pgSample" class="sel" style="width:100%"></select>
+        <label for="pgQuery">1 · Your query</label>
+        <textarea id="pgQuery" placeholder="e.g. What storage temperature does the guide recommend for rice?"></textarea>
+        <label for="pgAnswer">2 · LLM output you received</label>
+        <textarea id="pgAnswer" placeholder="Paste the exact answer the LLM gave you…"></textarea>
+        <label for="pgContext">3 · Retrieved context (optional, improves accuracy)</label>
+        <textarea id="pgContext" style="min-height:64px" placeholder="Optional: paste the context the RAG system retrieved…"></textarea>
+        <label for="pgSat">4 · Your satisfaction with the answer</label>
+        <div class="pg-sat"><input type="range" id="pgSat" min="0" max="100" value="50"><b id="pgSatVal">50%</b></div>
+        <div style="margin-top:18px;display:flex;gap:10px">
+          <button class="btn btn-primary" id="pgRun">⚡ Classify failure mode</button>
+          <button class="btn btn-outline" id="pgClear">Clear</button>
+        </div>
+      </div>
+      <div class="pg-result rv" id="pgResult">
+        <div class="pg-verdict"><span class="vdot" style="color:#5b6b8c;background:#5b6b8c"></span>Waiting for input…</div>
+        <div class="pg-conf">The classifier needs a query and an LLM answer. Results appear here with per-class confidence.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ METRICS ============ -->
 <section class="sec dark" id="metrics">
   <div class="wrap">
     <div class="sec-head rv">
-      <div class="kicker">03 · EVALUATION</div>
+      <div class="kicker">04 · EVALUATION</div>
       <h2>Retrieval &amp; classification, measured honestly</h2>
       <p class="sub">Zero-shot FAISS baseline (all-MiniLM-L6-v2, index built in Colab) and a TF-IDF + Logistic Regression failure classifier on the held-out test split. Macro-F1 reported alongside accuracy because the label distribution is imbalanced.</p>
     </div>
@@ -560,7 +718,7 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
 <section class="sec" id="schema">
   <div class="wrap">
     <div class="sec-head rv">
-      <div class="kicker">04 · DATASET SCHEMA</div>
+      <div class="kicker">05 · DATASET SCHEMA</div>
       <h2>Pydantic-validated, citation-aware records</h2>
       <p class="sub">Every row passes strict schema validation: unique IDs, seven approved labels, citation integrity, score bounds and document-level split isolation.</p>
     </div>
@@ -570,7 +728,7 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
       </div>
       <div class="rv">
         <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
-          <select class="sel" id="schemaPick" style="flex:1"></select>
+          <select class="sel" id="schemaPick" style="flex:1;min-width:0"></select>
           <button class="btn btn-outline btn-sm" id="copyJson">Copy</button>
           <button class="btn btn-light btn-sm" id="openJson">Open in explorer</button>
         </div>
@@ -584,15 +742,15 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
 <section class="sec dark" id="structure">
   <div class="wrap">
     <div class="sec-head rv">
-      <div class="kicker">05 · PROJECT STRUCTURE</div>
+      <div class="kicker">06 · PROJECT STRUCTURE</div>
       <h2>A modular, reproducible pipeline</h2>
       <p class="sub">Heavy embedding work runs once in Colab; the laptop only loads artifacts and encodes single queries. Every stage is a testable module.</p>
     </div>
-    <div class="chart-grid">
+    <div class="chart-grid structure-grid">
       <div class="tree rv" id="tree"></div>
-      <div class="rv">
+      <div class="structure-side rv">
         <div class="pipe" id="pipe"></div>
-        <div class="road" style="margin-top:24px">
+        <div class="road">
           <h3>Project Roadmap</h3>
           <div class="steps" id="steps"><div class="prog" id="roadProg"></div></div>
         </div>
@@ -605,7 +763,7 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
 <section class="sec" id="resources">
   <div class="wrap">
     <div class="sec-head rv">
-      <div class="kicker">06 · RESOURCES</div>
+      <div class="kicker">07 · RESOURCES</div>
       <h2>Everything needed to reuse the benchmark</h2>
       <p class="sub">Documentation, exports and attribution. Source data © Yogesh Mishra, licensed CC BY 4.0 — attribution required on redistribution.</p>
     </div>
@@ -624,8 +782,16 @@ footer{background:var(--ink);color:var(--txt-d2);padding:44px 0;font-size:.8rem}
 
 <footer>
   <div class="wrap foot-in">
-    <div><b>Collaborator</b>Sravan Kumar (CSE-AIML)</div>
-    <div><b>Teammate</b>RAG-FailureBench Lead AI</div>
+    <div class="foot-person">
+      <b>Collaborator</b>
+      <span>Sravan Kumar (CSE-AIML)</span>
+      <a class="gh-btn" href="https://github.com/Sravan-Kumar-16022007/RAG-Failure-Benchmark" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+    <div class="foot-person">
+      <b>Teammate</b>
+      <span>N. Sai Manoj</span>
+      <a class="gh-btn" href="https://github.com/Sravan-Kumar-16022007/RAG-Failure-Benchmark" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
     <div><b>Stack</b>Python · FAISS · Sentence-Transformers · Ollama · scikit-learn</div>
     <div><b>Design</b>Hand-rolled CSS, Tailwind-inspired utility discipline</div>
   </div>
@@ -745,7 +911,6 @@ async function boot(){
 }
 
 /* ================= FILTER / SORT ================= */
-function effective(r){ return r; }
 function getFiltered(){
   const f=S.filters, q=f.q.trim().toLowerCase();
   let out = S.records.filter(r=>{
@@ -802,8 +967,8 @@ function meanScore(records,key){
 function duplicatePairs(records){
   const seen=new Map(), duplicates=[];
   records.forEach(r=>{
-    const key=`${String(r.question||"").trim().toLowerCase()}���${String(r.generated_answer||"").trim().toLowerCase()}`;
-    if(!key.replace(/���/g,"")) return;
+    const key=`${String(r.question||"").trim().toLowerCase()}|||${String(r.generated_answer||"").trim().toLowerCase()}`;
+    if(!key.replace(/\|\|\|/g,"")) return;
     if(seen.has(key)) duplicates.push([seen.get(key),r.example_id]);
     else seen.set(key,r.example_id);
   });
@@ -962,8 +1127,7 @@ function renderTree(){
   $("tree").innerHTML=`<span class="dir">rag-failure-bench/</span>
 ├── <span class="dir">app/</span>
 │   ├── <span class="file">web/index.html</span>      <span class="cm2"># this landing + explorer</span>
-│   ├── <span class="file">server.py</span>           <span class="cm2"># stdlib API + static host</span>
-│   └── <span class="file">streamlit_app.py</span>    <span class="cm2"># optional dashboard</span>
+│   └── <span class="file">streamlit_app.py</span>    <span class="cm2"># interactive data dashboard</span>
 ├── <span class="dir">src/</span>
 │   ├── <span class="file">schemas.py</span>          <span class="cm2"># Pydantic contract</span>
 │   ├── <span class="file">validation.py</span>       <span class="cm2"># audits + leakage checks</span>
@@ -978,7 +1142,7 @@ function renderTree(){
 ├── <span class="dir">scripts/</span>
 │   └── <span class="file">build_faiss_index_colab.py</span>
 ├── <span class="dir">artifacts/</span>             <span class="cm2"># model + index.faiss + id_map</span>
-├── <span class="dir">data/</span> <span class="dir">outputs/</span> <span class="dir">configs/</span> <span class="dir">tests/</span>
+├── <span class="dir">data/</span> <span class="dir">outputs/</span> <span class="dir">configs/</span>
 └── <span class="file">requirements.txt</span>`;
   $("pipe").innerHTML=[["Ingest","Kaggle CSV"],["Normalize","8→7 labels"],["Embed","Colab GPU"],["FAISS","cosine top-k"],["Generate","Ollama + cites"],["Classify","macro-F1 .95"]].map(([b,s])=>`<div class="pipe-step"><b>${b}</b><span>${s}</span></div>`).join("");
 }
@@ -1138,7 +1302,7 @@ function exportCsv(records){
 function wire(){
   $("burger").onclick=()=>$("navLinks").classList.toggle("open");
   $("ddBtn").onclick=()=>$("dd").classList.toggle("open");
-  $("ghBtn").onclick=()=>window.open("https://github.com","_blank","noopener");
+  $("ghBtn").onclick=()=>window.open("https://github.com/Sravan-Kumar-16022007/RAG-Failure-Benchmark","_blank","noopener");
   document.querySelectorAll(".nav-links a[data-sec]").forEach(link=>link.onclick=()=>{
     document.querySelectorAll(".nav-links a[data-sec]").forEach(item=>item.classList.remove("active"));
     link.classList.add("active");
@@ -1232,6 +1396,82 @@ function wire(){
 }
 wire();
 boot();
+
+/* ================= LIVE PLAYGROUND ================= */
+(function(){
+  const sat=$("pgSat"), satVal=$("pgSatVal");
+  if(!sat) return;
+  sat.addEventListener("input",()=>satVal.textContent=sat.value+"%");
+  const hist=store.get("rfb_pg_history",[]);
+
+  /* Built-in test samples: 2 per benchmark label (templated + natural) */
+  const SAMPLES=[
+    {id:"N1",label:"no_failure",name:"N-1 natural · clean grounded answer",sat:95,q:"What was the team's win rate in 2024?",a:"The team's win rate in 2024 was 62%.",c:"The team finished the 2024 season with a win rate of 62 percent."},
+    {id:"N2",label:"no_failure",name:"N-2 templated · exact key-point match",sat:95,q:"According to the provided context, what is the key point about win rate?",a:"The key point is that win rate is linked to guideline number 14, and it also mentions a priority order.",c:"The document explains that win rate is linked to guideline number 14. A priority order is also mentioned."},
+    {id:"H1",label:"hallucination",name:"H-1 natural · invented extra fact",sat:80,q:"What storage temperature does the guide recommend for rice?",a:"Store rice at 21C or below, which also prevents all bacterial growth.",c:"Store dry rice at 21 degrees Celsius or below to slow spoilage."},
+    {id:"H2",label:"hallucination",name:"H-2 templated · unsupported side effect",sat:80,q:"Which detail is supported by the context for spices overview?",a:"The key point is that spices overview is linked to threshold number 7, and it also causes a completely unsupported side effect.",c:"The context indicates that spices overview is linked to threshold number 7. A best practice is also mentioned."},
+    {id:"R1",label:"retrieval_failure",name:"R-1 natural · irrelevant context",sat:20,q:"What dropout-prevention measures are listed in the district handbook?",a:"The handbook requires daily homework grading and Saturday tutoring.",c:"The cafeteria menu rotates seasonally and includes a vegetarian option."},
+    {id:"R2",label:"retrieval_failure",name:"R-2 templated · refusal despite evidence",sat:30,q:"Summarize the main fact about exoplanets from the passage.",a:"The context does not provide enough information to answer confidently.",c:"The passage states that exoplanets is linked to warning sign number 1. A required step is also mentioned."},
+    {id:"C1",label:"contradiction",name:"C-1 natural · direct negation",sat:60,q:"Does the supervised technique in the filing memo require labeled data?",a:"No, the technique does not require labeled data at all.",c:"The supervised technique described in this memo requires labeled data for training."},
+    {id:"C2",label:"contradiction",name:"C-2 templated · linked to the opposite",sat:15,q:"What is the correct answer regarding daily spending?",a:"The key point is that daily spending is not linked to deadline number 16; instead, it is linked to the opposite.",c:"The context indicates that daily spending is linked to deadline number 16. An estimated cost is also mentioned."},
+    {id:"W1",label:"wrong_citation",name:"W-1 natural · citation supports wrong claim",sat:65,q:"Which method is faster, Method A or Method B?",a:"Method A is faster than Method B [ctx_001].",c:"Method A uses less memory than Method B during calibration runs."},
+    {id:"W2",label:"wrong_citation",name:"W-2 templated · reference points elsewhere",sat:55,q:"What is the correct answer regarding research methods?",a:"The key point is that research methods is linked to guideline number 7, but the supporting reference points elsewhere.",c:"The passage states that research methods is linked to guideline number 7. A follow-up action is also mentioned."},
+    {id:"E1",label:"reasoning_error",name:"E-1 natural · wrong percentage math",sat:70,q:"How much faster is Service B than Service A?",a:"Service B is 33.3% faster than Service A.",c:"Service A handles 20 requests per second. Service B handles 30 requests per second."},
+    {id:"E2",label:"reasoning_error",name:"E-2 templated · invalid inference",sat:50,q:"What does the document say about type 2 diabetes?",a:"Since type 2 diabetes mentions a time window, the model concludes an unrelated extra result that does not follow.",c:"The document explains that type 2 diabetes is linked to warning sign number 4. A time window is also mentioned."},
+    {id:"P1",label:"partial_answer",name:"P-1 natural · 1 of 3 required facts",sat:55,q:"Name the three advantages of the regional rail pass in the brochure.",a:"The rail pass offers a fixed daily cost.",c:"The regional rail pass offers a fixed daily cost, no reservation fees on local trains, and group discounts for parties of three or more."},
+    {id:"P2",label:"partial_answer",name:"P-2 templated · truncated key point",sat:60,q:"Summarize the main fact about reaction rate from the passage.",a:"The key point is that reaction rate is linked to increase number 10.",c:"The passage states that reaction rate is linked to increase number 10. A weekly review is also mentioned."}
+  ];
+  const selPg=$("pgSample");
+  if(selPg){
+    let html=`<option value="">— pick a sample per benchmark —</option>`;
+    LKEYS.forEach(k=>{
+      html+=`<optgroup label="${k}">`+SAMPLES.filter(s=>s.label===k).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")+`</optgroup>`;
+    });
+    selPg.innerHTML=html;
+    selPg.onchange=()=>{
+      const s=SAMPLES.find(x=>x.id===selPg.value); if(!s) return;
+      $("pgQuery").value=s.q; $("pgAnswer").value=s.a; $("pgContext").value=s.c;
+      sat.value=s.sat; satVal.textContent=s.sat+"%";
+      toast(`Sample loaded: ${s.name}`,"ok");
+    };
+  }
+
+  function renderHistory(){
+    const box=$("pgHistory"); if(!box) return;
+    box.innerHTML=hist.length?hist.slice(0,6).map((h,i)=>`<button data-h="${i}"><span class="rev-dot" style="background:${LABELS[h.label]?LABELS[h.label].c:"#98a2b3"}"></span><span class="hq">${esc(h.q)}</span><span class="mono" style="font-size:.64rem">${Math.round(h.conf*100)}%</span></button>`).join(""):"";
+    box.querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{const h=hist[+b.dataset.h];$("pgQuery").value=h.q;$("pgAnswer").value=h.a;$("pgContext").value=h.c||"";sat.value=h.sat??50;satVal.textContent=sat.value+"%";});
+  }
+  function renderResult(r){
+    const c=LABELS[r.label]?LABELS[r.label].c:"#98a2b3";
+    const ok=r.label==="no_failure";
+    let html=`<div class="pg-verdict"><span class="vdot" style="color:${c};background:${c}"></span>${ok?"✅ ":LABELS[r.label].icon+" "}${esc(r.label_display)}</div>
+      <div class="pg-conf">Model confidence: <b style="color:${c}">${(r.confidence*100).toFixed(1)}%</b> · your satisfaction: ${r.satisfaction!=null?r.satisfaction+"%":"—"}</div>`;
+    html+=Object.entries(r.probabilities).map(([k,v])=>`<div class="pg-bar"><span class="n">${k}</span><span class="t"><span class="f" data-w="${(v*100).toFixed(1)}" style="background:${LABELS[k]?LABELS[k].c:"#98a2b3"}"></span></span><span class="v">${(v*100).toFixed(1)}%</span></div>`).join("");
+    if(r.note) html+=`<div class="pg-note">⚠ ${esc(r.note)}</div>`;
+    html+=`<div class="pg-history" id="pgHistory"></div>`;
+    $("pgResult").innerHTML=html;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>$("pgResult").querySelectorAll(".f[data-w]").forEach(f=>f.style.width=f.dataset.w+"%")));
+    renderHistory();
+  }
+  $("pgRun").onclick=async()=>{
+    const q=$("pgQuery").value.trim(), a=$("pgAnswer").value.trim(), c=$("pgContext").value.trim();
+    if(!q||!a){toast("Enter both the query and the LLM answer","warn");return;}
+    const btn=$("pgRun"); btn.disabled=true; btn.textContent="Classifying…";
+    try{
+      const res=await fetch("/api/classify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q,answer:a,context:c,satisfaction:Number(sat.value)})});
+      const j=await res.json();
+      if(!res.ok) throw new Error(j.error||"Classifier error");
+      hist.unshift({q,a,c,sat:Number(sat.value),label:j.label,conf:j.confidence});
+      store.set("rfb_pg_history",hist.slice(0,10));
+      renderResult(j);
+      toast(`Classified: ${j.label} (${(j.confidence*100).toFixed(0)}%)`,"ok");
+    }catch(e){
+      toast(e.message||"Live classifier unreachable — run: python app/server.py","warn");
+    }finally{ btn.disabled=false; btn.textContent="⚡ Classify failure mode"; }
+  };
+  $("pgClear").onclick=()=>{ $("pgQuery").value="";$("pgAnswer").value="";$("pgContext").value="";sat.value=50;satVal.textContent="50%"; if(selPg) selPg.value=""; };
+  renderHistory();
+})();
 </script>
 </body>
 </html>
